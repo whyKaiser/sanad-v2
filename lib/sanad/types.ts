@@ -1,0 +1,29 @@
+export type CaseStatus = "needs_document" | "needs_review" | "ready";
+export type FieldKey = "name" | "passportNumber" | "nationality" | "birthDate" | "expiryDate";
+export type TravelFields = Record<FieldKey, string>;
+export type FieldLocation = { x: number; y: number; width: number; height: number };
+export type StoredDocument = {
+  id: string; caseId: string; type: "passport" | "travel_document";
+  filename: string; contentType: string; size: number; sha256: string;
+  source: string; capturedAt: string; createdAt: string;
+  fields: TravelFields; extractedText: string; confidence: number | null;
+  locations: Partial<Record<FieldKey, FieldLocation>>;
+  reviewStatus: "pending" | "approved" | "needs_correction";
+  reviewNote: string; reviewedAt: string | null; synthetic: boolean;
+  extractionMethod: "manual" | "tesseract" | "synthetic"; revision: number;
+};
+export type CaseRecord = {
+  id: string; reference: string; name: string; englishName: string;
+  borderNumber: string; visaNumber: string; passportNumber: string;
+  nationality: string; birthDate: string; entryDate: string;
+  visaType: string; port: string; consularStatus: "not_started" | "under_review" | "document_issued" | "additional_info";
+  notes: string; synthetic: boolean; createdAt: string; updatedAt: string;
+  documents: StoredDocument[]; status: CaseStatus;
+};
+export type AuditEvent = { id: string; caseId: string | null; action: string; detail: string; createdAt: string };
+export type Evidence = { id: string; documentId?: string; field?: FieldKey; label: string; value: string; source: string };
+export type Answer = { title: string; text: string; evidence: Evidence[]; mode: "semantic" | "direct" | "generative"; warning?: string };
+export const fieldLabels: Record<FieldKey, string> = { name: "الاسم حسب الوثيقة", passportNumber: "رقم الوثيقة", nationality: "الجنسية حسب الوثيقة", birthDate: "تاريخ الميلاد", expiryDate: "تاريخ الانتهاء" };
+export const statusLabels: Record<CaseStatus, string> = { needs_document: "نسخة الجواز ناقصة", needs_review: "تحتاج مراجعة", ready: "تمت مراجعة النسخة" };
+export const consularLabels = { not_started: "لم تبدأ المراجعة", under_review: "قيد المراجعة القنصلية", document_issued: "صدرت وثيقة بديلة", additional_info: "طُلبت معلومات إضافية" };
+export const emptyFields = (): TravelFields => ({name:"",passportNumber:"",nationality:"",birthDate:"",expiryDate:""});
