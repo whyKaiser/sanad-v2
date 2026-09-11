@@ -5,6 +5,7 @@ import { CaseRecord, StoredDocument, AuditEvent, TravelFields } from "./types";
 import { caseStatus, answerFromRecord, directIntent, discrepancies, escapeHtml } from "./domain";
 import { assistantSchema, caseUpdateSchema, detectedMime, fieldsSchema, newCaseSchema, reviewSchema, dateString, locationSchema } from "./validation";
 import { demoCases, demoRecord, syntheticLocations, syntheticSvg } from "./demo";
+import { answerWithGroq, groqConfiguration } from "./groq";
 
 class HttpError extends Error { constructor(public status:number,message:string){super(message);} }
 function db(){if(!env.DB)throw new HttpError(503,"قاعدة البيانات غير متاحة. حاول مجددًا بعد قليل.");return env.DB;}
@@ -29,7 +30,7 @@ async function state(owner:string){
     db().prepare("SELECT * FROM documents WHERE owner=? ORDER BY created_at DESC").bind(owner).all<DocRow>(),
     db().prepare("SELECT id,case_id AS caseId,action,detail,created_at AS createdAt FROM audit_log WHERE owner=? ORDER BY created_at DESC LIMIT 150").bind(owner).all<AuditEvent>(),
   ]);
-  return {cases:rows.results.map(row=>{const documents=docs.results.filter(d=>d.case_id===row.id).map(unpackDoc);return {...JSON.parse(row.data),id:row.id,reference:row.reference,createdAt:row.created_at,updatedAt:row.updated_at,documents,status:caseStatus(documents)};}),audit:events.results,ai:{provider:"local",generativeConfigured:false},demoOnly:true};
+  return {cases:rows.results.map(row=>{const documents=docs.results.filter(d=>d.case_id===row.id).map(unpackDoc);return {...JSON.parse(row.data),id:row.id,reference:row.reference,createdAt:row.created_at,updatedAt:row.updated_at,documents,status:caseStatus(documents)};}),audit:events.results,ai:groqConfiguration(env),demoOnly:true};
 }
 async function body(request:Request){const raw=await request.text();if(raw.length>100_000)throw new HttpError(413,"الطلب أكبر من الحد المسموح.");try{return JSON.parse(raw);}catch{throw new HttpError(400,"صيغة الطلب غير صحيحة.");}}
 async function hash(data:ArrayBuffer|Uint8Array){const h=await crypto.subtle.digest("SHA-256",data as BufferSource);return Array.from(new Uint8Array(h)).map(b=>b.toString(16).padStart(2,"0")).join("");}
@@ -97,6 +98,7 @@ export async function handle(request:Request):Promise<Response>{
       if(request.headers.get("sec-fetch-site")==="cross-site")throw new HttpError(403,"مصدر الطلب غير مسموح.");
     }
     if(path[0]==="state"&&method==="GET")return json(await state(owner));
+    if(path[0]==="ai-config"&&method==="GET")return json(groqConfiguration(env));
     if(path[0]==="demo"&&method==="POST"){await seed(owner);return json(await state(owner),201);}
     if(path[0]==="cases"&&!path[1]&&method==="POST"){
       const input=newCaseSchema.parse(await body(request));const id=crypto.randomUUID();const now=new Date().toISOString();const reference=`SND-${new Date().getUTCFullYear()}-${id.slice(0,8).toUpperCase()}`;
@@ -131,8 +133,9 @@ export async function handle(request:Request):Promise<Response>{
     if(path[0]==="assistant"&&method==="POST"){
       const input=assistantSchema.parse(await body(request));const record=await getCase(owner,input.caseId);
       const intent=directIntent(input.query)??(input.semantic?input.intent??null:null);
-      const answer=answerFromRecord(record,intent,input.semantic?"semantic":"direct");
-      await audit(owner,record.id,"assistant_used",`طلب ${intent||"غير مدعوم"}؛ إجابة من الملف ${input.semantic?"بفهم دلالي محلي":"باستعلام مباشر"}`).run();return json(answer);
+      const fallback=answerFromRecord(record,intent,input.semantic?"semantic":"direct");
+      const answer=input.provider==="local"?fallback:await answerWithGroq(record,input.query,fallback,env);
+      await audit(owner,record.id,"assistant_used",`مراجعة مستندات الملف؛ ${answer.mode==="generative"?"مسودة مولدة عبر Groq":answer.mode==="semantic"?"فهم دلالي محلي":"إجابة من السجل"}`).run();return json(answer);
     }
     if(path[0]==="packet-snapshots"&&path[1]&&method==="GET"){
       const snapshot=await db().prepare("SELECT snapshot,created_at FROM packet_reviews WHERE owner=? AND id=?").bind(owner,path[1]).first<{snapshot:string;created_at:string}>();
