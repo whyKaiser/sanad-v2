@@ -17,7 +17,7 @@ class GroqFailure extends Error {
 }
 async function completion(environment: GroqEnvironment, messages: { role: string; content: string }[], name: string, schema: object, request: typeof fetch) {
   const response = await request("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST", redirect: "error", signal: AbortSignal.timeout(15_000),
+    method: "POST", redirect: "manual", signal: AbortSignal.timeout(15_000),
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${environment.GROQ_API_KEY!.trim()}` },
     body: JSON.stringify({ model: environment.GROQ_MODEL?.trim() || defaultGroqModel, temperature: 0, max_completion_tokens: 1600, reasoning_effort: "low", stream: false,
       messages, response_format: { type: "json_schema", json_schema: { name, strict: true, schema } } }),

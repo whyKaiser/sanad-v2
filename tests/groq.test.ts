@@ -18,6 +18,7 @@ test("Missing key remains local and public configuration never exposes it", asyn
 test("Groq uses server authorization, minimal evidence, validated references and a human-review draft", async () => {
   const request: typeof fetch = async (url, init) => {
     assert.equal(url, "https://api.groq.com/openai/v1/chat/completions");
+    assert.equal(init?.redirect, "manual", "Workers supports manual redirect handling, and credentials must never follow redirects");
     assert.equal(new Headers(init?.headers).get("authorization"), "Bearer test-secret-not-real");
     const body = JSON.parse(String(init?.body));
     assert.equal(body.response_format.json_schema.strict, true);
@@ -34,7 +35,7 @@ test("Invented references discard generated text", async () => {
   assert.equal(result.mode, "direct"); assert.equal(result.text, fallback.text); assert.match(result.warning!, /تعذر/);
 });
 test("Rate limit, rejected key and provider outage return grounded answers without leaking provider bodies", async () => {
-  for (const status of [429, 401, 403, 503]) {
+  for (const status of [302, 307, 429, 401, 403, 503]) {
     const result = await answerWithGroq(record, "لخص الملف", fallback, environment, async () => new Response("SECRET PROVIDER BODY", { status }));
     assert.equal(result.mode, "direct"); assert.equal(result.text, fallback.text); assert.ok(result.warning); assert.ok(!JSON.stringify(result).includes("SECRET PROVIDER BODY"));
   }
