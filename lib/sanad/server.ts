@@ -1,5 +1,6 @@
 import { env } from "cloudflare:workers";
-import { getChatGPTUser } from "@/app/chatgpt-auth";
+import { getCurrentUser, handleAuth } from "./auth";
+import { documentStore } from "./storage";
 import { ZodError } from "zod";
 import { CaseRecord, StoredDocument, AuditEvent, TravelFields } from "./types";
 import { caseStatus, answerFromRecord, directIntent, discrepancies, escapeHtml } from "./domain";
@@ -9,7 +10,7 @@ import { answerWithGroq, groqConfiguration } from "./groq";
 
 class HttpError extends Error { constructor(public status:number,message:string){super(message);} }
 function db(){if(!env.DB)throw new HttpError(503,"قاعدة البيانات غير متاحة. حاول مجددًا بعد قليل.");return env.DB;}
-function bucket(){if(!env.BUCKET)throw new HttpError(503,"حفظ الملفات غير متاح الآن.");return env.BUCKET;}
+function bucket(){return documentStore(db());}
 export const securityHeaders={"Cache-Control":"no-store","X-Content-Type-Options":"nosniff","Referrer-Policy":"same-origin"};
 function json(value:unknown,status=200){return Response.json(value,{status,headers:securityHeaders});}
 function audit(owner:string,caseId:string|null,action:string,detail:string){return db().prepare("INSERT INTO audit_log (id,owner,case_id,action,detail,created_at) VALUES (?,?,?,?,?,?)").bind(crypto.randomUUID(),owner,caseId,action,detail,new Date().toISOString());}
@@ -91,7 +92,8 @@ function packetHtml(record:CaseRecord,reviewed=false,preparedAt=new Date().toISO
 }
 export async function handle(request:Request):Promise<Response>{
   try{
-    const user=await getChatGPTUser();if(!user)throw new HttpError(401,"سجل الدخول للوصول إلى مساحة العمل.");
+    if(new URL(request.url).pathname.startsWith("/api/auth/"))return await handleAuth(request);
+    const user=await getCurrentUser(request);if(!user)throw new HttpError(401,"سجل الدخول للوصول إلى مساحة العمل.");
     const owner=user.userId;const url=new URL(request.url);const path=url.pathname.replace(/^\/api\/?/,"").split("/");const method=request.method;
     if(method!=="GET"){
       const origin=request.headers.get("origin");if(origin&&origin!==url.origin)throw new HttpError(403,"مصدر الطلب غير مسموح.");

@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "sanad",
+  "main": "vinext/server/fetch-handler",
+  "account_id": "f1fb17ec2fed32287901a7d219d65619",
+  "compatibility_date": "2026-05-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "d1_databases": [{
+    "binding": "DB",
+    "database_name": "sanad-db",
+    "database_id": "f48962ab-dda6-409d-9bad-1b9c559c7511",
+    "migrations_dir": "drizzle"
+  }]
+}

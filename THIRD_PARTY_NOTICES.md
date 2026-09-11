@@ -7,6 +7,6 @@ Dependency versions are pinned by `package-lock.json`. Preserve upstream notices
 - ONNX Runtime: MIT. Runtime and loader copied from the installed package. https://github.com/microsoft/onnxruntime
 - Xenova/paraphrase-multilingual-MiniLM-L12-v2: Apache-2.0. Weights are downloaded by the browser, not included here. https://huggingface.co/Xenova/paraphrase-multilingual-MiniLM-L12-v2
 - IBM Plex Sans Arabic: SIL Open Font License 1.1. https://github.com/IBM/plex
-- Other dependencies retain their upstream licenses. The vendored Sites plugin license is preserved under `build/`.
+- Other dependencies retain their upstream licenses.
 
 All demo identities and travel document images were created for this prototype. No real passport images or official government logos are included.

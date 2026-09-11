@@ -2,10 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {demoRecord} from '../lib/sanad/demo';
-const base=process.env.SANAD_TEST_URL||'http://localhost:5173';
-if(!/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(base))throw Error('Integration tests are restricted to loopback.');
-const cookie='__sites_local_auth=1';
-async function request(path:string,method='GET',body?:unknown,headers:Record<string,string>={}){return fetch(base+path,{method,headers:{cookie,...(body instanceof FormData?{}:{'content-type':'application/json'}),...headers},body:body instanceof FormData?body:body===undefined?undefined:JSON.stringify(body)});}
+import {base,request} from './session';
 test('Unauthenticated and forged-header requests are denied',async()=>{assert.equal((await fetch(base+'/api/state')).status,401);assert.equal((await fetch(base+'/api/state',{headers:{'oai-authenticated-user-id':'local_seedy'}})).status,401);});
 test('Cross-origin mutation is rejected',async()=>assert.equal((await request('/api/cases','POST',{}, {origin:'https://untrusted.example'})).status,403));
 test('Document lifecycle, duplicate, stale edit, packet snapshot, and persistence',async()=>{

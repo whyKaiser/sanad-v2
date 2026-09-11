@@ -1,21 +1,25 @@
 {
   "name": "sanad",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "engines": {
     "node": ">=22.13.0"
   },
   "scripts": {
-    "install:ci": "node scripts/install-ci.mjs",
-    "dev": "node scripts/run-framework.mjs dev",
-    "build": "node scripts/run-framework.mjs build",
-    "start": "node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js dev --config dist/server/wrangler.json --local --persist-to .wrangler/state --ip 127.0.0.1 --inspector-port 0",
+    "dev": "vinext dev --port 5173 --host 127.0.0.1",
+    "build": "vinext build",
+    "start": "wrangler dev --config dist/server/wrangler.json --env-file .env --local --persist-to .wrangler/state --ip 127.0.0.1 --port 5173",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate",
     "prebuild": "node scripts/prepare-ai.mjs",
+    "postbuild": "node scripts/check-build.mjs",
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test tests/domain.test.ts tests/ocr.test.ts tests/groq.test.ts",
-    "test:integration": "node --import tsx --test tests/api.test.ts tests/tenant.test.ts"
+    "test:integration": "node --import tsx --test --test-concurrency=1 tests/api.test.ts tests/tenant.test.ts tests/independent.test.ts",
+    "db:migrate:local": "wrangler d1 migrations apply DB --local",
+    "db:migrate:remote": "wrangler d1 migrations apply DB --remote",
+    "setup:login": "node --import tsx scripts/setup-login.ts",
+    "deploy": "npm run build && npm run db:migrate:remote && wrangler deploy --config dist/server/wrangler.json"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
