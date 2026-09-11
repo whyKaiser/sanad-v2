@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "vinext dev --port 5173 --host 127.0.0.1",
     "build": "vinext build",
-    "start": "wrangler dev --config dist/server/wrangler.json --env-file .env --local --persist-to .wrangler/state --ip 127.0.0.1 --port 5173",
+    "start": "node scripts/start.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate",
     "prebuild": "node scripts/prepare-ai.mjs",
