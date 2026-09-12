@@ -12,4 +12,3 @@ export function validationMessage(issue: ZodIssue) {
   else if (!/[\u0600-\u06FF]/.test(message)) message = "القيمة غير صحيحة أو غير مكتملة";
   return `${label}${side}: ${message}`;
 }
-
