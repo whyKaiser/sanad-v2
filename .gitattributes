@@ -1,0 +1,3 @@
+# Keep document bytes intact on every platform.
+*.pdf binary
+*.pptx binary
