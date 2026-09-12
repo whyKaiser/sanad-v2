@@ -1,9 +1,9 @@
 import type { CaseRecord } from "./types";
 import { escapeHtml as e } from "./domain";
-import { coreGroups, displayRecordedDate, emptyDetails, legFields, profileGroups } from "./traveler";
+import { coreGroups, displayRecordedDate, emptyDetails, normalizeDetails, legFields, profileGroups } from "./traveler";
 
 export function travelerPrintHtml(record: CaseRecord) {
-  const details = record.details || emptyDetails();
+  const details = normalizeDetails(record.details);
   const printedValue = (v: string) => /^\d{4}-\d{2}-\d{2}/.test(v) ? `<bdi dir="ltr">${e(v.slice(0,10))}</bdi>${e(v.slice(10))}` : e(v || "غير مدخل");
   const table = (rows: string[][]) => `<table>${rows.map(([label, value]) => `<tr><th>${e(label)}</th><td dir="auto">${printedValue(value)}</td></tr>`).join("")}</table>`;
   const core = coreGroups(record);

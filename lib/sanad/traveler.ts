@@ -23,7 +23,7 @@ export const profileGroups = [
     ["recordStatus", "الحالة في السجل"], ["religion", "الديانة"], ["description", "الوصف"], ["travelRecordNumber", "سجل السفر"],
   ], dates: [["statusDate", "تاريخ الحالة"]] },
   { title: "الجواز المسجل", fields: [["documentType", "نوع الوثيقة"], ["passportType", "نوع الجواز"], ["passportIssuePlace", "مكان إصدار الجواز"]], dates: [["passportIssueDate", "تاريخ إصدار الجواز"], ["passportExpiryDate", "تاريخ انتهاء الجواز"]] },
-  { title: "التأشيرة", fields: [["visaTrips", "عدد السفرات"], ["visaIssuePlace", "مكان إصدار التأشيرة"], ["visaDays", "التأشيرة بالأيام"], ["stayDays", "مدة الإقامة بالأيام"], ["remainingDays", "المدة المتبقية حسب السجل"]], dates: [["visaIssueDate", "تاريخ إصدار التأشيرة"], ["visaExpiryDate", "تاريخ انتهاء التأشيرة"], ["remainingAsOf", "تاريخ رصد المدة المتبقية"]] },
+  { title: "التأشيرة", fields: [["visaTrips", "عدد السفرات"], ["visaIssuePlace", "مكان إصدار التأشيرة"], ["visaDays", "التأشيرة بالأيام"], ["stayDays", "مدة الإقامة بالأيام"], ["remainingDays", "المدة المتبقية حسب السجل"]], dates: [["visaIssueDate", "تاريخ إصدار التأشيرة"], ["visaExpiryDate", "تاريخ انتهاء التأشيرة"], ["remainingAsOf", "تاريخ رصد المدة المتبقية"], ["departureDeadline", "موعد المغادرة حسب المصدر"]] },
   { title: "تفاصيل التأشيرة والمتابعة", fields: [["interiorOrderNumber", "رقم أمر الداخلية"], ["amount", "المبلغ"], ["receiptNumber", "رقم الإيصال"], ["fineReceiptNumber", "رقم إيصال الغرامة"], ["fineAmount", "مبلغ الغرامة"], ["employerNumber", "رقم صاحب العمل"], ["employerName", "اسم صاحب العمل"], ["address", "العنوان"]], dates: [["finalDepartureDate", "المغادرة النهائية حسب السجل"]] },
 ] as const;
 export const profileFieldKeys = profileGroups.flatMap(g => g.fields.map(f => f[0]));
@@ -65,6 +65,10 @@ export const profileUpdateSchema = z.object({ revision: z.number().int().min(0),
 export const movementUpdateSchema = z.object({ revision: z.number().int().min(0), movement: movementSchema, setLatestEntry: z.boolean() }).strict();
 export type CaseDetails = { revision: number; profile: TravelerProfile; movements: TravelMovement[]; latestEntryId: string | null };
 export function emptyDetails(): CaseDetails { return { revision: 0, profile: emptyProfile(), movements: [], latestEntryId: null }; }
+export function normalizeDetails(value?: Partial<CaseDetails> | null): CaseDetails {
+  const defaults = emptyDetails();
+  return { ...defaults, ...value, profile: { ...defaults.profile, ...value?.profile, values: { ...defaults.profile.values, ...value?.profile?.values }, dates: { ...defaults.profile.dates, ...value?.profile?.dates } } };
+}
 export function coreGroups(record: CaseRecord) {
   return [
     [["الاسم بالعربية", record.name], ["الاسم بالإنجليزية", record.englishName], ["رقم الحدود", record.borderNumber], ["تاريخ الميلاد — ميلادي", record.birthDate]],

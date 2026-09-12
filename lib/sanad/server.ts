@@ -1,5 +1,6 @@
+import { operationsHandle, OperationsError } from "./operations-server";
 import { validationMessage } from "./validation-messages";
-import { answerTravelerQuery, emptyDetails, profileUpdateSchema, movementUpdateSchema, type CaseDetails } from "./traveler";
+import { answerTravelerQuery, emptyDetails, normalizeDetails, profileUpdateSchema, movementUpdateSchema, type CaseDetails } from "./traveler";
 import { travelerPrintHtml } from "./traveler-print";
 import { env } from "cloudflare:workers";
 import { getCurrentUser, handleAuth } from "./auth";
@@ -23,7 +24,7 @@ type DocRow={id:string;owner:string;case_id:string;object_key:string;sha256:stri
 function unpackDoc(row:DocRow):StoredDocument{return {...JSON.parse(row.data),id:row.id,caseId:row.case_id,sha256:row.sha256,createdAt:row.created_at,revision:row.revision};}
 async function documentRow(owner:string,id:string){const row=await db().prepare("SELECT * FROM documents WHERE owner=? AND id=?").bind(owner,id).first<DocRow>();if(!row)throw new HttpError(404,"المستند غير موجود أو غير متاح لحسابك.");return row;}
 type DetailsRow={case_id:string;owner:string;data:string;revision:number};
-function unpackDetails(row?:DetailsRow|null):CaseDetails{return row?{...JSON.parse(row.data),revision:row.revision}:emptyDetails();}
+function unpackDetails(row?:DetailsRow|null):CaseDetails{return normalizeDetails(row?{...JSON.parse(row.data),revision:row.revision}:null);}
 async function readDetails(owner:string,caseId:string){return unpackDetails(await db().prepare("SELECT * FROM case_details WHERE owner=? AND case_id=?").bind(owner,caseId).first<DetailsRow>());}
 async function saveDetails(owner:string,caseId:string,details:CaseDetails,revision:number,action:string,detail:string){
   const now=new Date().toISOString();const {revision:ignored,...data}=details;
@@ -122,6 +123,8 @@ export async function handle(request:Request):Promise<Response>{
       const origin=request.headers.get("origin");if(origin&&origin!==url.origin)throw new HttpError(403,"مصدر الطلب غير مسموح.");
       if(request.headers.get("sec-fetch-site")==="cross-site")throw new HttpError(403,"مصدر الطلب غير مسموح.");
     }
+    const operation=await operationsHandle({database:db(),owner,request,path,method,getCase:id=>getCase(owner,id),audit:(caseId,action,detail)=>audit(owner,caseId,action,detail)});
+    if(operation)return operation;
     if(path[0]==="state"&&method==="GET")return json(await state(owner));
     if(path[0]==="ai-config"&&method==="GET")return json(groqConfiguration(env));
     if(path[0]==="demo"&&method==="POST"){await seed(owner);return json(await state(owner),201);}
@@ -202,7 +205,7 @@ export async function handle(request:Request):Promise<Response>{
     }
     throw new HttpError(404,"المسار غير موجود.");
   }catch(error){
-    if(error instanceof HttpError)return json({error:error.message},error.status);
+    if(error instanceof HttpError || error instanceof OperationsError)return json({error:error.message},error.status);
     if(error instanceof ZodError)return json({error:error.issues.map(validationMessage).join("؛ ")},400);
     if(error instanceof SyntaxError)return json({error:"تعذر قراءة بيانات الطلب."},400);
     console.error("sanad_request_failed",error instanceof Error?error.name:"unknown");return json({error:"تعذر إكمال العملية. بياناتك المدخلة محفوظة في الشاشة؛ حاول مجددًا."},503);

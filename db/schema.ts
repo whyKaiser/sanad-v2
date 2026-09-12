@@ -13,6 +13,14 @@ export const caseDetails = sqliteTable("case_details", {
   owner: text("owner").notNull(), data: text("data").notNull(),
   revision: integer("revision").notNull().default(1),
 }, t=>[index("case_details_owner").on(t.owner)]);
+export const intakeRequests = sqliteTable("intake_requests", {
+  id: text("id").primaryKey(), owner: text("owner").notNull(), requestKey: text("request_key").notNull(), visaNumber: text("visa_number").notNull(),
+  data: text("data").notNull(), revision: integer("revision").notNull().default(1),
+}, t=>[uniqueIndex("intake_owner_request").on(t.owner,t.requestKey),uniqueIndex("intake_owner_visa").on(t.owner,t.visaNumber)]);
+export const directiveRecords = sqliteTable("directive_records", {
+  id: text("id").primaryKey(), owner: text("owner").notNull(), caseId: text("case_id").notNull().references(()=>cases.id,{onDelete:"cascade"}),
+  requestKey: text("request_key").notNull(), reference: text("reference").notNull(), data: text("data").notNull(), revision: integer("revision").notNull().default(1),
+}, t=>[uniqueIndex("directive_owner_request").on(t.owner,t.requestKey),uniqueIndex("directive_case_reference").on(t.caseId,t.reference),index("directive_owner_case").on(t.owner,t.caseId)]);
 export const auditLog = sqliteTable("audit_log", {
   id:text("id").primaryKey(), owner:text("owner").notNull(), caseId:text("case_id"), action:text("action").notNull(),
   detail:text("detail").notNull(), createdAt:text("created_at").notNull(),
