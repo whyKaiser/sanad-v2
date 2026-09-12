@@ -8,6 +8,11 @@ export const documents = sqliteTable("documents", {
   objectKey:text("object_key").notNull(), sha256:text("sha256").notNull(), data:text("data").notNull(),
   revision:integer("revision").notNull().default(1), createdAt:text("created_at").notNull(),
 }, t=>[index("documents_owner_case").on(t.owner,t.caseId),uniqueIndex("documents_case_sha").on(t.caseId,t.sha256)]);
+export const caseDetails = sqliteTable("case_details", {
+  caseId: text("case_id").primaryKey().references(()=>cases.id,{onDelete:"cascade"}),
+  owner: text("owner").notNull(), data: text("data").notNull(),
+  revision: integer("revision").notNull().default(1),
+}, t=>[index("case_details_owner").on(t.owner)]);
 export const auditLog = sqliteTable("audit_log", {
   id:text("id").primaryKey(), owner:text("owner").notNull(), caseId:text("case_id"), action:text("action").notNull(),
   detail:text("detail").notNull(), createdAt:text("created_at").notNull(),

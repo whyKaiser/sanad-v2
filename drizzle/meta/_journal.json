@@ -15,6 +15,13 @@
       "when": 1789138647824,
       "tag": "0001_absurd_revanche",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1789222515814,
+      "tag": "0002_sudden_paibok",
+      "breakpoints": true
     }
   ]
 }

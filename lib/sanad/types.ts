@@ -13,6 +13,7 @@ export type StoredDocument = {
   extractionMethod: "manual" | "tesseract" | "synthetic"; revision: number;
 };
 export type CaseRecord = {
+  details?: import("./traveler").CaseDetails;
   id: string; reference: string; name: string; englishName: string;
   borderNumber: string; visaNumber: string; passportNumber: string;
   nationality: string; birthDate: string; entryDate: string;
@@ -21,7 +22,7 @@ export type CaseRecord = {
   documents: StoredDocument[]; status: CaseStatus;
 };
 export type AuditEvent = { id: string; caseId: string | null; action: string; detail: string; createdAt: string };
-export type Evidence = { id: string; documentId?: string; field?: FieldKey; label: string; value: string; source: string };
+export type Evidence = { id: string; documentId?: string; field?: FieldKey; label: string; value: string; source: string; section?: "record" | "travel"; movementId?: string };
 export type Answer = { title: string; text: string; evidence: Evidence[]; mode: "semantic" | "direct" | "generative"; warning?: string; verifiedText?: string };
 export const fieldLabels: Record<FieldKey, string> = { name: "الاسم حسب الوثيقة", passportNumber: "رقم الوثيقة", nationality: "الجنسية حسب الوثيقة", birthDate: "تاريخ الميلاد", expiryDate: "تاريخ الانتهاء" };
 export const statusLabels: Record<CaseStatus, string> = { needs_document: "نسخة الجواز ناقصة", needs_review: "تحتاج مراجعة", ready: "تمت مراجعة النسخة" };

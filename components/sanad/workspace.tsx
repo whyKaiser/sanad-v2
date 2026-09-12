@@ -32,7 +32,7 @@ export default function Workspace({displayName}:{displayName:string}){
   const selected=state.cases.find(c=>c.id===selectedId)||null;
   const documents=state.cases.flatMap(c=>c.documents);
   const stats=useMemo(()=>({total:state.cases.length,ready:state.cases.filter(c=>c.status==="ready").length,review:state.cases.filter(c=>c.status==="needs_review").length,missing:state.cases.filter(c=>c.status==="needs_document").length}),[state.cases]);
-  const filtered=state.cases.filter(c=>(filter==="all"||c.status===filter)&&(visaFilter==="all"||c.visaType===visaFilter)&&`${c.name} ${c.englishName} ${c.reference} ${c.borderNumber} ${c.visaNumber} ${c.passportNumber}`.toLowerCase().includes(query.toLowerCase()));
+  const filtered=state.cases.filter(c=>(filter==="all"||c.status===filter)&&(visaFilter==="all"||c.visaType===visaFilter)&&`${c.name} ${c.englishName} ${c.reference} ${c.borderNumber} ${c.visaNumber} ${c.passportNumber} ${c.details?.profile.values.identityNumber||""} ${c.details?.profile.values.travelRecordNumber||""} ${c.details?.movements.map(m=>m.reference).join(" ")||""}`.toLowerCase().includes(query.toLowerCase()));
   function navigate(next:View){setView(next);setSelectedId(null);setQuery("");}
   async function seed(){setSeeding(true);try{const data=await api<State>("/api/demo",{method:"POST",body:"{}"});setState(data);toast.success("أُضيفت الحالات التجريبية إلى مساحة عملك");}catch(e){toast.error((e as Error).message);}finally{setSeeding(false);}}
   useEffect(()=>{

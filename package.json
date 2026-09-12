@@ -1,6 +1,6 @@
 {
   "name": "sanad",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "engines": {
     "node": ">=22.13.0"
@@ -14,8 +14,8 @@
     "prebuild": "node scripts/prepare-ai.mjs",
     "postbuild": "node scripts/check-build.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test tests/domain.test.ts tests/ocr.test.ts tests/groq.test.ts",
-    "test:integration": "node --import tsx --test --test-concurrency=1 tests/api.test.ts tests/tenant.test.ts tests/independent.test.ts",
+    "test": "node --import tsx --test tests/domain.test.ts tests/ocr.test.ts tests/groq.test.ts tests/traveler.test.ts",
+    "test:integration": "node --import tsx --test --test-concurrency=1 tests/api.test.ts tests/tenant.test.ts tests/independent.test.ts tests/traveler-api.test.ts",
     "db:migrate:local": "wrangler d1 migrations apply DB --local",
     "db:migrate:remote": "wrangler d1 migrations apply DB --remote",
     "setup:login": "node --import tsx scripts/setup-login.ts",

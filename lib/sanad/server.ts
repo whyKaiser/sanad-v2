@@ -1,3 +1,6 @@
+import { validationMessage } from "./validation-messages";
+import { answerTravelerQuery, emptyDetails, profileUpdateSchema, movementUpdateSchema, type CaseDetails } from "./traveler";
+import { travelerPrintHtml } from "./traveler-print";
 import { env } from "cloudflare:workers";
 import { getCurrentUser, handleAuth } from "./auth";
 import { documentStore } from "./storage";
@@ -5,6 +8,7 @@ import { ZodError } from "zod";
 import { CaseRecord, StoredDocument, AuditEvent, TravelFields } from "./types";
 import { caseStatus, answerFromRecord, directIntent, discrepancies, escapeHtml } from "./domain";
 import { assistantSchema, caseUpdateSchema, detectedMime, fieldsSchema, newCaseSchema, reviewSchema, dateString, locationSchema } from "./validation";
+import { demoDetails } from "./traveler-demo";
 import { demoCases, demoRecord, syntheticLocations, syntheticSvg } from "./demo";
 import { answerWithGroq, groqConfiguration } from "./groq";
 
@@ -18,20 +22,35 @@ type CaseRow={id:string;owner:string;reference:string;data:string;created_at:str
 type DocRow={id:string;owner:string;case_id:string;object_key:string;sha256:string;data:string;revision:number;created_at:string};
 function unpackDoc(row:DocRow):StoredDocument{return {...JSON.parse(row.data),id:row.id,caseId:row.case_id,sha256:row.sha256,createdAt:row.created_at,revision:row.revision};}
 async function documentRow(owner:string,id:string){const row=await db().prepare("SELECT * FROM documents WHERE owner=? AND id=?").bind(owner,id).first<DocRow>();if(!row)throw new HttpError(404,"المستند غير موجود أو غير متاح لحسابك.");return row;}
+type DetailsRow={case_id:string;owner:string;data:string;revision:number};
+function unpackDetails(row?:DetailsRow|null):CaseDetails{return row?{...JSON.parse(row.data),revision:row.revision}:emptyDetails();}
+async function readDetails(owner:string,caseId:string){return unpackDetails(await db().prepare("SELECT * FROM case_details WHERE owner=? AND case_id=?").bind(owner,caseId).first<DetailsRow>());}
+async function saveDetails(owner:string,caseId:string,details:CaseDetails,revision:number,action:string,detail:string){
+  const now=new Date().toISOString();const {revision:ignored,...data}=details;
+  const write=revision===0
+    ?db().prepare("INSERT INTO case_details (case_id,owner,data,revision) VALUES (?,?,?,1) ON CONFLICT(case_id) DO NOTHING").bind(caseId,owner,JSON.stringify(data))
+    :db().prepare("UPDATE case_details SET data=?,revision=revision+1 WHERE case_id=? AND owner=? AND revision=?").bind(JSON.stringify(data),caseId,owner,revision);
+  const results=await db().batch([write,
+    db().prepare("INSERT INTO audit_log (id,owner,case_id,action,detail,created_at) SELECT ?,?,?,?,?,? WHERE changes()>0").bind(crypto.randomUUID(),owner,caseId,action,detail,now),
+    db().prepare("UPDATE cases SET updated_at=? WHERE id=? AND owner=? AND changes()>0").bind(now,caseId,owner),
+  ]);
+  if(!results[0].meta.changes)throw new HttpError(409,"تغير السجل أثناء التعديل. أغلق النافذة وحدّث الحالة ثم أعد المحاولة؛ لم تُستبدل البيانات الأحدث.");
+}
 async function getCase(owner:string,id:string):Promise<CaseRecord>{
   const row=await db().prepare("SELECT * FROM cases WHERE owner=? AND id=?").bind(owner,id).first<CaseRow>();
   if(!row)throw new HttpError(404,"الحالة غير موجودة أو غير متاحة لحسابك.");
   const docs=await db().prepare("SELECT * FROM documents WHERE owner=? AND case_id=? ORDER BY created_at DESC").bind(owner,id).all<DocRow>();
   const documents=docs.results.map(unpackDoc);
-  return {...JSON.parse(row.data),id:row.id,reference:row.reference,createdAt:row.created_at,updatedAt:row.updated_at,documents,status:caseStatus(documents)};
+  return {...JSON.parse(row.data),id:row.id,reference:row.reference,createdAt:row.created_at,updatedAt:row.updated_at,documents,status:caseStatus(documents),details:await readDetails(owner,id)};
 }
 async function state(owner:string){
-  const [rows,docs,events]=await Promise.all([
+  const [rows,docs,events,details]=await Promise.all([
     db().prepare("SELECT * FROM cases WHERE owner=? ORDER BY updated_at DESC").bind(owner).all<CaseRow>(),
     db().prepare("SELECT * FROM documents WHERE owner=? ORDER BY created_at DESC").bind(owner).all<DocRow>(),
     db().prepare("SELECT id,case_id AS caseId,action,detail,created_at AS createdAt FROM audit_log WHERE owner=? ORDER BY created_at DESC LIMIT 150").bind(owner).all<AuditEvent>(),
+    db().prepare("SELECT * FROM case_details WHERE owner=?").bind(owner).all<DetailsRow>(),
   ]);
-  return {cases:rows.results.map(row=>{const documents=docs.results.filter(d=>d.case_id===row.id).map(unpackDoc);return {...JSON.parse(row.data),id:row.id,reference:row.reference,createdAt:row.created_at,updatedAt:row.updated_at,documents,status:caseStatus(documents)};}),audit:events.results,ai:groqConfiguration(env),demoOnly:true};
+  return {cases:rows.results.map(row=>{const documents=docs.results.filter(d=>d.case_id===row.id).map(unpackDoc);return {...JSON.parse(row.data),id:row.id,reference:row.reference,createdAt:row.created_at,updatedAt:row.updated_at,documents,status:caseStatus(documents),details:unpackDetails(details.results.find(d=>d.case_id===row.id))};}),audit:events.results,ai:groqConfiguration(env),demoOnly:true};
 }
 async function body(request:Request){const raw=await request.text();if(raw.length>100_000)throw new HttpError(413,"الطلب أكبر من الحد المسموح.");try{return JSON.parse(raw);}catch{throw new HttpError(400,"صيغة الطلب غير صحيحة.");}}
 async function hash(data:ArrayBuffer|Uint8Array){const h=await crypto.subtle.digest("SHA-256",data as BufferSource);return Array.from(new Uint8Array(h)).map(b=>b.toString(16).padStart(2,"0")).join("");}
@@ -43,9 +62,11 @@ async function seed(owner:string){
     for(let i=0;i<demoCases.length;i++){
       const id=crypto.randomUUID();const r=demoRecord(i);const ref=`SND-2026-${String(i+1).padStart(4,"0")}`;
       statements.push(db().prepare("INSERT INTO cases (id,owner,reference,data,created_at,updated_at) VALUES (?,?,?,?,?,?)").bind(id,owner,ref,JSON.stringify(r),now,now));
+      const seedDocumentIds:{passport?:string;travel_document?:string}={};
       if(demoCases[i].status!=="needs_document"){
         for(let n=0;n<(i===3?2:1);n++){
           const docId=crypto.randomUUID();const type=n===0?"passport":"travel_document";
+          seedDocumentIds[type]=docId;
           const fields:TravelFields={name:i===2?"YUSUF RAHIM":r.englishName,passportNumber:n===0?r.passportNumber:`SND-TD-100${i}`,nationality:r.nationality,birthDate:r.birthDate,expiryDate:"2030-04-12"};
           const svg=syntheticSvg(fields,type);const bytes=new TextEncoder().encode(svg);const sha=await hash(bytes);const key=`${owner}/${id}/${docId}`;
           await bucket().put(key,bytes,{httpMetadata:{contentType:"image/svg+xml"}});keys.push(key);
@@ -53,6 +74,8 @@ async function seed(owner:string){
           statements.push(db().prepare("INSERT INTO documents (id,owner,case_id,object_key,sha256,data,revision,created_at) VALUES (?,?,?,?,?,?,1,?)").bind(docId,owner,id,key,sha,JSON.stringify(document),now));
         }
       }
+      const {revision:ignoredRevision,...details}=demoDetails(r,i,seedDocumentIds);
+      statements.push(db().prepare("INSERT INTO case_details (case_id,owner,data,revision) VALUES (?,?,?,1)").bind(id,owner,JSON.stringify(details)));
       statements.push(audit(owner,id,"demo_created",`إنشاء الحالة التجريبية ${ref}`));
     }
     await db().batch(statements);
@@ -88,7 +111,7 @@ async function addDocument(owner:string,request:Request){
 }
 function packetHtml(record:CaseRecord,reviewed=false,preparedAt=new Date().toISOString()){
   const e=escapeHtml;const sections=record.documents.map(d=>`<section><h2>${d.type==="passport"?"نسخة الجواز":"الوثيقة البديلة"}</h2><p>المصدر: ${e(d.source)} • تاريخ التقديم: ${e(d.capturedAt)} • المراجعة: ${d.reviewStatus==="approved"?"راجعها الموظف":"تحتاج مراجعة"}</p><table>${Object.entries(d.fields).map(([k,v])=>`<tr><th>${e(({name:"الاسم",passportNumber:"رقم الوثيقة",nationality:"الجنسية حسب الوثيقة",birthDate:"الميلاد",expiryDate:"الانتهاء"} as Record<string,string>)[k])}</th><td dir="auto">${e(v||"غير متاح")}</td></tr>`).join("")}</table><p>ملاحظات المراجع: ${e(d.reviewNote||"لا توجد")}</p>${discrepancies(record,d).length?"<p class='warning'>توجد اختلافات بين بيانات الوثيقة وسجل الدخول؛ يلزم الرجوع إلى ملاحظات المراجع.</p>":""}${d.contentType.startsWith("image/")?`<img src="/api/documents/${d.id}/file" alt="مستند اصطناعي محفوظ"/>`:`<p><a href="/api/documents/${d.id}/file">فتح ملف PDF المرفق</a></p>`}<small>بصمة الملف SHA-256: <span dir="ltr">${d.sha256}</span></small></section>`).join("");
-  return `<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>سَنَد — ${e(record.reference)}</title><style>body{font-family:Tahoma,Arial,sans-serif;color:#142e39;line-height:1.9;max-width:850px;margin:32px auto;padding:24px}header{border-bottom:3px solid #10756b}h1{font-size:26px}h2{font-size:20px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px;text-align:right}th{width:33%;background:#f0f5f4}section{margin-top:30px;break-inside:avoid}img{width:100%;max-height:420px;object-fit:contain;margin:15px 0}small{overflow-wrap:anywhere}.warning{color:#854d0e;background:#fffbeb;padding:12px}.toolbar{display:flex;gap:12px}button{background:#10756b;color:white;border:0;padding:12px 20px;cursor:pointer;border-radius:8px;font:inherit}@media print{body{padding:0;margin:0;font-size:11pt}.toolbar{display:none}@page{size:A4;margin:16mm}img{max-height:340px}}</style><div class="toolbar"><button onclick="window.print()">طباعة / حفظ PDF</button><a href="/">العودة لسَنَد</a></div><header><h1>سَنَد | ملف المستندات للمراجعة</h1><p>${e(record.reference)} • ${e(record.name)}</p></header><p class="warning">بيانات اصطناعية — نموذج هاكاثون. ${reviewed?"سُجلت مراجعة هذه الحزمة داخل النموذج.":"مسودة تحتاج مراجعة الموظف."} ليست وثيقة سفر ولا إثباتًا مستقلًا للجنسية.</p><table><tr><th>الاسم في سجل الدخول</th><td>${e(record.englishName)}</td></tr><tr><th>رقم الحدود التجريبي</th><td>${e(record.borderNumber)}</td></tr><tr><th>تاريخ الدخول</th><td>${e(record.entryDate)}</td></tr><tr><th>الملاحظات</th><td>${e(record.notes||"لا توجد")}</td></tr></table>${sections||"<p class='warning'>لا توجد مستندات مرفقة. لا يمكن استرجاع وثيقة لم تحفظ.</p>"}<footer><p>أُعدت الحزمة من السجلات المحفوظة في سَنَد. اعتماد المستندات وإصدار وثائق السفر من اختصاص الجهات المعنية.</p><small>تاريخ إعداد الحزمة: ${e(preparedAt)}</small></footer></html>`;
+  return `<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>سَنَد — ${e(record.reference)}</title><style>body{font-family:Tahoma,Arial,sans-serif;color:#142e39;line-height:1.9;max-width:850px;margin:32px auto;padding:24px}header{border-bottom:3px solid #10756b}h1{font-size:26px}h2{font-size:20px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px;text-align:right}th{width:33%;background:#f0f5f4}section{margin-top:30px;break-inside:avoid}img{width:100%;max-height:420px;object-fit:contain;margin:15px 0}small{overflow-wrap:anywhere}.warning{color:#854d0e;background:#fffbeb;padding:12px}.toolbar{display:flex;gap:12px}button{background:#10756b;color:white;border:0;padding:12px 20px;cursor:pointer;border-radius:8px;font:inherit}@media print{body{padding:0;margin:0;font-size:11pt}.toolbar{display:none}@page{size:A4;margin:16mm}img{max-height:340px}}</style><div class="toolbar"><button onclick="window.print()">طباعة / حفظ PDF</button><a href="/">العودة لسَنَد</a></div><header><h1>سَنَد | ملف المستندات للمراجعة</h1><p>${e(record.reference)} • ${e(record.name)}</p></header><p class="warning">بيانات اصطناعية — نموذج هاكاثون. ${reviewed?"سُجلت مراجعة هذه الحزمة داخل النموذج.":"مسودة تحتاج مراجعة الموظف."} ليست وثيقة سفر ولا إثباتًا مستقلًا للجنسية.</p><table><tr><th>الاسم في سجل الدخول</th><td>${e(record.englishName)}</td></tr><tr><th>رقم الحدود التجريبي</th><td>${e(record.borderNumber)}</td></tr><tr><th>تاريخ الدخول الأساسي — ميلادي</th><td>${e(record.entryDate)}</td></tr><tr><th>الملاحظات</th><td>${e(record.notes||"لا توجد")}</td></tr></table>${travelerPrintHtml(record)}${sections||"<p class='warning'>لا توجد مستندات مرفقة. لا يمكن استرجاع وثيقة لم تحفظ.</p>"}<footer><p>أُعدت الحزمة من السجلات المحفوظة في سَنَد. اعتماد المستندات وإصدار وثائق السفر من اختصاص الجهات المعنية.</p><small>تاريخ إعداد الحزمة: ${e(preparedAt)}</small></footer></html>`;
 }
 export async function handle(request:Request):Promise<Response>{
   try{
@@ -108,8 +131,27 @@ export async function handle(request:Request):Promise<Response>{
       await db().batch([db().prepare("INSERT INTO cases (id,owner,reference,data,created_at,updated_at) VALUES (?,?,?,?,?,?)").bind(id,owner,reference,JSON.stringify(data),now,now),audit(owner,id,"case_created",`إنشاء الحالة ${reference}`)]);
       return json(await getCase(owner,id),201);
     }
-    if(path[0]==="cases"&&path[1]&&method==="GET")return json(await getCase(owner,path[1]));
-    if(path[0]==="cases"&&path[1]&&method==="PATCH"){
+    if(path[0]==="cases"&&path[1]&&path[2]==="profile"&&method==="PUT"){
+      const input=profileUpdateSchema.parse(await body(request));const record=await getCase(owner,path[1]);
+      const details=record.details!;
+      await saveDetails(owner,record.id,{...details,profile:input.profile},input.revision,"traveler_updated",`تحديث خانات المسافر والجواز والتأشيرة للحالة ${record.reference}`);
+      return json(await getCase(owner,record.id));
+    }
+    if(path[0]==="cases"&&path[1]&&path[2]==="travel"&&((!path[3]&&method==="POST")||(path[3]&&method==="PATCH"))){
+      const input=movementUpdateSchema.parse(await body(request));const record=await getCase(owner,path[1]);const details=record.details!;
+      if(input.revision!==details.revision)throw new HttpError(409,"تغير السجل أثناء التعديل. حدّث الحالة ثم أعد المحاولة.");
+      const old=path[3]?details.movements.find(m=>m.id===path[3]):null;
+      if(path[3]&&!old)throw new HttpError(404,"حركة السفر غير موجودة في هذه الحالة.");
+      if(!old&&details.movements.length>=100)throw new HttpError(400,"الحد التجريبي 100 حركة لكل حالة.");
+      if(details.movements.some(m=>m.id!==old?.id&&m.reference.toUpperCase()===input.movement.reference.toUpperCase()))throw new HttpError(409,"رقم سجل السفر موجود في هذه الحالة.");
+      for(const leg of [input.movement.entry,input.movement.exit])if(leg.documentId&&!record.documents.some(d=>d.id===leg.documentId))throw new HttpError(400,"اختر نسخة وثيقة محفوظة ضمن هذه الحالة فقط.");
+      const now=new Date().toISOString();const movement={...input.movement,id:old?.id||crypto.randomUUID(),createdAt:old?.createdAt||now,updatedAt:now};
+      const movements=old?details.movements.map(m=>m.id===old.id?movement:m):[movement,...details.movements];
+      await saveDetails(owner,record.id,{...details,movements,latestEntryId:input.setLatestEntry?movement.id:details.latestEntryId},input.revision,"travel_updated",`${old?"تعديل":"إضافة"} حركة سفر ${movement.reference}${input.setLatestEntry?" وتحديدها كآخر دخول":""}`);
+      return json(await getCase(owner,record.id),old?200:201);
+    }
+    if(path[0]==="cases"&&path[1]&&!path[2]&&method==="GET")return json(await getCase(owner,path[1]));
+    if(path[0]==="cases"&&path[1]&&!path[2]&&method==="PATCH"){
       const input=caseUpdateSchema.parse(await body(request));const record=await getCase(owner,path[1]);
       const row=await db().prepare("SELECT data FROM cases WHERE owner=? AND id=?").bind(owner,path[1]).first<{data:string}>();
       await db().batch([db().prepare("UPDATE cases SET data=?,updated_at=? WHERE owner=? AND id=?").bind(JSON.stringify({...JSON.parse(row!.data),...input}),new Date().toISOString(),owner,record.id),audit(owner,record.id,"case_updated",`تحديث متابعة الحالة ${record.reference}`)]);
@@ -136,7 +178,8 @@ export async function handle(request:Request):Promise<Response>{
       const input=assistantSchema.parse(await body(request));const record=await getCase(owner,input.caseId);
       const intent=directIntent(input.query)??(input.semantic?input.intent??null:null);
       const fallback=answerFromRecord(record,intent,input.semantic?"semantic":"direct");
-      const answer=input.provider==="local"?fallback:await answerWithGroq(record,input.query,fallback,env);
+      const travelerAnswer=answerTravelerQuery(record,input.query);
+      const answer=travelerAnswer||(input.provider==="local"?fallback:await answerWithGroq(record,input.query,fallback,env));
       await audit(owner,record.id,"assistant_used",`مراجعة مستندات الملف؛ ${answer.mode==="generative"?"مسودة مولدة عبر Groq":answer.mode==="semantic"?"فهم دلالي محلي":"إجابة من السجل"}`).run();return json(answer);
     }
     if(path[0]==="packet-snapshots"&&path[1]&&method==="GET"){
@@ -160,7 +203,7 @@ export async function handle(request:Request):Promise<Response>{
     throw new HttpError(404,"المسار غير موجود.");
   }catch(error){
     if(error instanceof HttpError)return json({error:error.message},error.status);
-    if(error instanceof ZodError)return json({error:error.issues.map(x=>`${x.path.join(".")}: ${x.message}`).join("؛ ")},400);
+    if(error instanceof ZodError)return json({error:error.issues.map(validationMessage).join("؛ ")},400);
     if(error instanceof SyntaxError)return json({error:"تعذر قراءة بيانات الطلب."},400);
     console.error("sanad_request_failed",error instanceof Error?error.name:"unknown");return json({error:"تعذر إكمال العملية. بياناتك المدخلة محفوظة في الشاشة؛ حاول مجددًا."},503);
   }
