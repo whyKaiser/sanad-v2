@@ -12,7 +12,7 @@ const username=config.SANAD_USERNAME||"admin";
 const password=randomBytes(24).toString("base64url");
 const hash=await hashPassword(password);
 const kept=original.split(/\r?\n/).filter(line=>!/^SANAD_(USERNAME|PASSWORD_HASH|DISPLAY_NAME)=/.test(line));
-writeFileSync(filename,kept.join("\n").trimEnd()+`\nSANAD_USERNAME=${username}\nSANAD_PASSWORD_HASH=${hash}\nSANAD_DISPLAY_NAME=مراجع سَنَد\n`);
+writeFileSync(filename,kept.filter(line=>!line.startsWith('SANAD_AUDIT_KEY=')).join("\n").trimEnd()+`\nSANAD_USERNAME=${username}\nSANAD_PASSWORD_HASH=${hash}\nSANAD_DISPLAY_NAME=مسؤول سَنَد ٢\nSANAD_AUDIT_KEY=${config.SANAD_AUDIT_KEY||randomBytes(32).toString('hex')}\n`);
 mkdirSync("work",{recursive:true});
 writeFileSync("work/login-private.json",JSON.stringify({username,password},null,2));
 writeFileSync("work/login-private.txt",`بيانات دخول سَنَد — احفظها بشكل خاص\nاسم المستخدم: ${username}\nكلمة المرور: ${password}\n\nملف محلي مستثنى من Git. لا تشاركه مع الجمهور.\n`);

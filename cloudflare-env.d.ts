@@ -4,6 +4,7 @@ declare namespace Cloudflare {
     SANAD_USERNAME?: string;
     SANAD_PASSWORD_HASH?: string;
     SANAD_DISPLAY_NAME?: string;
+    SANAD_AUDIT_KEY?: string;
     GROQ_API_KEY?: string;
     GROQ_MODEL?: string;
   }

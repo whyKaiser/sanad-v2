@@ -12,6 +12,12 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    ".wrangler/**",
+    "work/**",
+    "public/ai/**",
+    // Vendored Tesseract runtime copied from npm; lint authored application code.
+    "public/ocr/**",
+    "public/ocr-core/**",
   ]),
   {
     files: ["components/ui/**/*.{ts,tsx}", "hooks/use-mobile.ts"],

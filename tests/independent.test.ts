@@ -1,3 +1,4 @@
+import type {CaseRecord,StoredDocument} from '../lib/sanad/types';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
@@ -18,14 +19,14 @@ test('Login rejects foreign origins and incorrect credentials; cookie is HttpOnl
   const headers={'content-type':'application/json'};const body=JSON.stringify({username:'admin',password:'this-is-a-wrong-password'});
   assert.equal((await fetch(base+'/api/auth/login',{method:'POST',headers:{...headers,origin:'https://untrusted.example'},body})).status,403);
   assert.equal((await fetch(base+'/api/auth/login',{method:'POST',headers:{...headers,origin:base},body})).status,401);
-  assert.equal((await request('/api/state')).status,200);assert.match(await sessionCookie(),/^sanad_session=[a-f0-9]{64}$/);
+  assert.equal((await request('/api/state')).status,200);assert.match(await sessionCookie(),/^sanad_v2_session=[a-f0-9]{64}$/);
 });
 test('A 5 MB synthetic file round-trips through chunked D1 storage and detects duplicates',async()=>{
-  const {consularStatus,...input}=demoRecord(0);const created=await request('/api/cases','POST',{...input,name:'اختبار الملف المقسم'});assert.equal(created.status,201);const record:any=await created.json();
+  const {consularStatus,...input}=demoRecord(0);const created=await request('/api/cases','POST',{...input,name:'اختبار الملف المقسم'});assert.equal(created.status,201);const record:CaseRecord=await created.json();
   const bytes=randomBytes(5*1024*1024);bytes.set(new TextEncoder().encode('%PDF-1.7\n% synthetic test bytes\n'));
   const fields={name:input.englishName,passportNumber:input.passportNumber,nationality:input.nationality,birthDate:input.birthDate,expiryDate:'2030-04-12'};
   function form(){const f=new FormData();f.set('file',new File([bytes],'chunk-test.pdf',{type:'application/pdf'}));for(const [k,v]of Object.entries({caseId:record.id,fields:JSON.stringify(fields),source:'اختبار تخزين اصطناعي',capturedAt:'2026-09-11',type:'passport',synthetic:'true',locations:'{}'}))f.set(k,v);return f;}
-  const uploaded=await request('/api/documents','POST',form());assert.equal(uploaded.status,201,await uploaded.clone().text());const doc:any=await uploaded.json();
+  const uploaded=await request('/api/documents','POST',form());assert.equal(uploaded.status,201,await uploaded.clone().text());const doc:StoredDocument=await uploaded.json();
   const retrieved=await request(`/api/documents/${doc.id}/file`);assert.equal(retrieved.status,200);assert.deepEqual(Buffer.from(await retrieved.arrayBuffer()),bytes);
   assert.equal((await request('/api/documents','POST',form())).status,409);
 });

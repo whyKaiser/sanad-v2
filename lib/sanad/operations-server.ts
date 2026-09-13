@@ -53,7 +53,7 @@ export async function operationsHandle(ctx: Context): Promise<Response | null> {
   if (path[0] === "intake" && path[1]) {
     const r = await intake(path[1]);
     if (!path[2] && method === "GET") return json(publicIntake(r));
-    if (path[2] === "file" && method === "GET") { const object = await store.get(r.file.objectKey); if (!object) throw new OperationsError(404, "النسخة غير متاحة"); return new Response(object.body, { headers: { ...headers, "Content-Type": r.file.contentType, "Content-Disposition": `inline; filename*=UTF-8''${encodeURIComponent(r.file.filename)}`, "Content-Security-Policy": "sandbox; default-src 'none'" } }); }
+    if (path[2] === "file" && method === "GET") { const object = await store.get(r.file.objectKey); if (!object) throw new OperationsError(404, "النسخة غير متاحة"); if(await hash(new Uint8Array(object.body))!==r.file.sha256)throw new OperationsError(423,"بصمة الملف لا تطابق النسخة المحفوظة؛ يلزم فحص المسؤول."); return new Response(object.body, { headers: { ...headers, "Content-Type": r.file.contentType, "Content-Disposition": `inline; filename*=UTF-8''${encodeURIComponent(r.file.filename)}`, "Content-Security-Policy": "sandbox; default-src 'none'" } }); }
     if (path[2] === "review" && method === "PATCH") {
       const input = intakeReviewSchema.parse(await body(request)); if (!["saved", "reviewed"].includes(r.status)) throw new OperationsError(409, "سُلّمت النسخة بالفعل. مراجعة النسخة المرتبطة تتم داخل ملف الحالة بعد الوصول.");
       if (input.fields.birthDate >= r.capturedAt) throw new OperationsError(400, "تاريخ الميلاد يجب أن يسبق حفظ النسخة");

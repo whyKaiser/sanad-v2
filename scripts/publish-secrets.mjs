@@ -2,9 +2,10 @@ import { readFileSync } from 'node:fs';
 import { parseEnv } from 'node:util';
 import { spawnSync } from 'node:child_process';
 import { resolve } from 'node:path';
+import './guard-v2.mjs';
 
 const config = parseEnv(readFileSync('.env', 'utf8'));
-const keys = ['SANAD_USERNAME', 'SANAD_PASSWORD_HASH', 'SANAD_DISPLAY_NAME', 'GROQ_API_KEY', 'GROQ_MODEL'];
+const keys = ['SANAD_USERNAME', 'SANAD_PASSWORD_HASH', 'SANAD_DISPLAY_NAME', 'SANAD_AUDIT_KEY', 'GROQ_API_KEY', 'GROQ_MODEL'];
 if (!config.SANAD_USERNAME || !config.SANAD_PASSWORD_HASH) {
   throw new Error('Run npm run setup:login first.');
 }
@@ -15,7 +16,7 @@ const result = spawnSync(process.execPath, [resolve('node_modules/wrangler/bin/w
 // Guard logs against accidental echoing by an upstream CLI version.
 function redact(output) {
   let safe = output || '';
-  for (const key of ['GROQ_API_KEY', 'SANAD_PASSWORD_HASH']) {
+  for (const key of ['GROQ_API_KEY', 'SANAD_PASSWORD_HASH','SANAD_AUDIT_KEY']) {
     if (values[key]) safe = safe.split(values[key]).join('[REDACTED]');
   }
   return safe;

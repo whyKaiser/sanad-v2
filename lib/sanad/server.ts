@@ -1,4 +1,6 @@
 import { operationsHandle, OperationsError } from "./operations-server";
+import { beginMutation, finishMutation, GovernanceError } from "./integrity-server";
+import { allowedAiEnv, authorize, governanceHandle } from "./governance-server";
 import { validationMessage } from "./validation-messages";
 import { answerTravelerQuery, emptyDetails, normalizeDetails, profileUpdateSchema, movementUpdateSchema, type CaseDetails } from "./traveler";
 import { travelerPrintHtml } from "./traveler-print";
@@ -19,7 +21,7 @@ function bucket(){return documentStore(db());}
 export const securityHeaders={"Cache-Control":"no-store","X-Content-Type-Options":"nosniff","Referrer-Policy":"same-origin"};
 function json(value:unknown,status=200){return Response.json(value,{status,headers:securityHeaders});}
 function audit(owner:string,caseId:string|null,action:string,detail:string){return db().prepare("INSERT INTO audit_log (id,owner,case_id,action,detail,created_at) VALUES (?,?,?,?,?,?)").bind(crypto.randomUUID(),owner,caseId,action,detail,new Date().toISOString());}
-type CaseRow={id:string;owner:string;reference:string;data:string;created_at:string;updated_at:string};
+type CaseRow={id:string;owner:string;reference:string;data:string;created_at:string;updated_at:string;revision:number};
 type DocRow={id:string;owner:string;case_id:string;object_key:string;sha256:string;data:string;revision:number;created_at:string};
 function unpackDoc(row:DocRow):StoredDocument{return {...JSON.parse(row.data),id:row.id,caseId:row.case_id,sha256:row.sha256,createdAt:row.created_at,revision:row.revision};}
 async function documentRow(owner:string,id:string){const row=await db().prepare("SELECT * FROM documents WHERE owner=? AND id=?").bind(owner,id).first<DocRow>();if(!row)throw new HttpError(404,"المستند غير موجود أو غير متاح لحسابك.");return row;}
@@ -42,7 +44,7 @@ async function getCase(owner:string,id:string):Promise<CaseRecord>{
   if(!row)throw new HttpError(404,"الحالة غير موجودة أو غير متاحة لحسابك.");
   const docs=await db().prepare("SELECT * FROM documents WHERE owner=? AND case_id=? ORDER BY created_at DESC").bind(owner,id).all<DocRow>();
   const documents=docs.results.map(unpackDoc);
-  return {...JSON.parse(row.data),id:row.id,reference:row.reference,createdAt:row.created_at,updatedAt:row.updated_at,documents,status:caseStatus(documents),details:await readDetails(owner,id)};
+  return {...JSON.parse(row.data),id:row.id,reference:row.reference,revision:row.revision,createdAt:row.created_at,updatedAt:row.updated_at,documents,status:caseStatus(documents),details:await readDetails(owner,id)};
 }
 async function state(owner:string){
   const [rows,docs,events,details]=await Promise.all([
@@ -51,7 +53,7 @@ async function state(owner:string){
     db().prepare("SELECT id,case_id AS caseId,action,detail,created_at AS createdAt FROM audit_log WHERE owner=? ORDER BY created_at DESC LIMIT 150").bind(owner).all<AuditEvent>(),
     db().prepare("SELECT * FROM case_details WHERE owner=?").bind(owner).all<DetailsRow>(),
   ]);
-  return {cases:rows.results.map(row=>{const documents=docs.results.filter(d=>d.case_id===row.id).map(unpackDoc);return {...JSON.parse(row.data),id:row.id,reference:row.reference,createdAt:row.created_at,updatedAt:row.updated_at,documents,status:caseStatus(documents),details:unpackDetails(details.results.find(d=>d.case_id===row.id))};}),audit:events.results,ai:groqConfiguration(env),demoOnly:true};
+  return {cases:rows.results.map(row=>{const documents=docs.results.filter(d=>d.case_id===row.id).map(unpackDoc);return {...JSON.parse(row.data),id:row.id,reference:row.reference,revision:row.revision,createdAt:row.created_at,updatedAt:row.updated_at,documents,status:caseStatus(documents),details:unpackDetails(details.results.find(d=>d.case_id===row.id))};}),audit:events.results,ai:groqConfiguration(await allowedAiEnv(owner)),demoOnly:true};
 }
 async function body(request:Request){const raw=await request.text();if(raw.length>100_000)throw new HttpError(413,"الطلب أكبر من الحد المسموح.");try{return JSON.parse(raw);}catch{throw new HttpError(400,"صيغة الطلب غير صحيحة.");}}
 async function hash(data:ArrayBuffer|Uint8Array){const h=await crypto.subtle.digest("SHA-256",data as BufferSource);return Array.from(new Uint8Array(h)).map(b=>b.toString(16).padStart(2,"0")).join("");}
@@ -115,10 +117,35 @@ function packetHtml(record:CaseRecord,reviewed=false,preparedAt=new Date().toISO
   return `<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>سَنَد — ${e(record.reference)}</title><style>body{font-family:Tahoma,Arial,sans-serif;color:#142e39;line-height:1.9;max-width:850px;margin:32px auto;padding:24px}header{border-bottom:3px solid #10756b}h1{font-size:26px}h2{font-size:20px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px;text-align:right}th{width:33%;background:#f0f5f4}section{margin-top:30px;break-inside:avoid}img{width:100%;max-height:420px;object-fit:contain;margin:15px 0}small{overflow-wrap:anywhere}.warning{color:#854d0e;background:#fffbeb;padding:12px}.toolbar{display:flex;gap:12px}button{background:#10756b;color:white;border:0;padding:12px 20px;cursor:pointer;border-radius:8px;font:inherit}@media print{body{padding:0;margin:0;font-size:11pt}.toolbar{display:none}@page{size:A4;margin:16mm}img{max-height:340px}}</style><div class="toolbar"><button onclick="window.print()">طباعة / حفظ PDF</button><a href="/">العودة لسَنَد</a></div><header><h1>سَنَد | ملف المستندات للمراجعة</h1><p>${e(record.reference)} • ${e(record.name)}</p></header><p class="warning">بيانات اصطناعية — نموذج هاكاثون. ${reviewed?"سُجلت مراجعة هذه الحزمة داخل النموذج.":"مسودة تحتاج مراجعة الموظف."} ليست وثيقة سفر ولا إثباتًا مستقلًا للجنسية.</p><table><tr><th>الاسم في سجل الدخول</th><td>${e(record.englishName)}</td></tr><tr><th>رقم الحدود التجريبي</th><td>${e(record.borderNumber)}</td></tr><tr><th>تاريخ الدخول الأساسي — ميلادي</th><td>${e(record.entryDate)}</td></tr><tr><th>الملاحظات</th><td>${e(record.notes||"لا توجد")}</td></tr></table>${travelerPrintHtml(record)}${sections||"<p class='warning'>لا توجد مستندات مرفقة. لا يمكن استرجاع وثيقة لم تحفظ.</p>"}<footer><p>أُعدت الحزمة من السجلات المحفوظة في سَنَد. اعتماد المستندات وإصدار وثائق السفر من اختصاص الجهات المعنية.</p><small>تاريخ إعداد الحزمة: ${e(preparedAt)}</small></footer></html>`;
 }
 export async function handle(request:Request):Promise<Response>{
+  try {
+    const url=new URL(request.url);
+    if(url.pathname.startsWith('/api/auth/'))return handleAuth(request);
+    const user=await getCurrentUser(request);if(!user)return json({error:"سجل الدخول للوصول إلى سَنَد ٢."},401);
+    if(request.method!=='GET'&&(request.headers.get('origin')!==url.origin||request.headers.get('sec-fetch-site')==='cross-site'))return json({error:"مصدر الطلب غير مسموح."},403);
+    await authorize(user,request);
+    const writes=request.method!=='GET'&&!['/api/assistant','/api/simulation'].includes(url.pathname);
+    let reason='إنشاء سجل أو استكمال إجراء في النسخة التجريبية';
+    if(request.headers.has('x-sanad-reason')){try{reason=decodeURIComponent(request.headers.get('x-sanad-reason')!);}catch{throw new GovernanceError(400,'سبب التعديل غير صالح.');}}
+    if(writes&&['PATCH','PUT'].includes(request.method)&&!request.headers.has('x-sanad-reason'))throw new GovernanceError(400,'دوّن سبب التعديل ليظهر في سجل يقين.');
+    if(reason.trim().length<8||reason.length>500)throw new GovernanceError(400,'سبب التعديل من 8 إلى 500 حرف.');
+    const token=writes?await beginMutation(user,`${request.method} ${url.pathname}`,reason):null;
+    try {
+      const response=await governanceHandle(request,user,id=>getCase(user.owner,id),async()=>(await state(user.owner)).cases);
+      return response||await handleRequest(request);
+    } finally {if(token)await finishMutation(user.owner,token);}
+  } catch(error) {
+    if(error instanceof GovernanceError)return json({error:error.message},error.status);
+    if(error instanceof HttpError||error instanceof OperationsError)return json({error:error.message},error.status);
+    if(error instanceof ZodError)return json({error:error.issues.map(validationMessage).join('؛ ')},400);
+    if(error instanceof SyntaxError)return json({error:'صيغة البيانات غير صحيحة.'},400);
+    console.error('sanad_v2_request_failed',error instanceof Error?error.name:'unknown');return json({error:'تعذر إكمال العملية. حدّث الحالة قبل إعادة المحاولة.'},503);
+  }
+}
+async function handleRequest(request:Request):Promise<Response>{
   try{
     if(new URL(request.url).pathname.startsWith("/api/auth/"))return await handleAuth(request);
     const user=await getCurrentUser(request);if(!user)throw new HttpError(401,"سجل الدخول للوصول إلى مساحة العمل.");
-    const owner=user.userId;const url=new URL(request.url);const path=url.pathname.replace(/^\/api\/?/,"").split("/");const method=request.method;
+    const owner=user.owner;const url=new URL(request.url);const path=url.pathname.replace(/^\/api\/?/,"").split("/");const method=request.method;
     if(method!=="GET"){
       const origin=request.headers.get("origin");if(origin&&origin!==url.origin)throw new HttpError(403,"مصدر الطلب غير مسموح.");
       if(request.headers.get("sec-fetch-site")==="cross-site")throw new HttpError(403,"مصدر الطلب غير مسموح.");
@@ -126,7 +153,7 @@ export async function handle(request:Request):Promise<Response>{
     const operation=await operationsHandle({database:db(),owner,request,path,method,getCase:id=>getCase(owner,id),audit:(caseId,action,detail)=>audit(owner,caseId,action,detail)});
     if(operation)return operation;
     if(path[0]==="state"&&method==="GET")return json(await state(owner));
-    if(path[0]==="ai-config"&&method==="GET")return json(groqConfiguration(env));
+    if(path[0]==="ai-config"&&method==="GET")return json(groqConfiguration(await allowedAiEnv(owner)));
     if(path[0]==="demo"&&method==="POST"){await seed(owner);return json(await state(owner),201);}
     if(path[0]==="cases"&&!path[1]&&method==="POST"){
       const input=newCaseSchema.parse(await body(request));const id=crypto.randomUUID();const now=new Date().toISOString();const reference=`SND-${new Date().getUTCFullYear()}-${id.slice(0,8).toUpperCase()}`;
@@ -157,12 +184,15 @@ export async function handle(request:Request):Promise<Response>{
     if(path[0]==="cases"&&path[1]&&!path[2]&&method==="PATCH"){
       const input=caseUpdateSchema.parse(await body(request));const record=await getCase(owner,path[1]);
       const row=await db().prepare("SELECT data FROM cases WHERE owner=? AND id=?").bind(owner,path[1]).first<{data:string}>();
-      await db().batch([db().prepare("UPDATE cases SET data=?,updated_at=? WHERE owner=? AND id=?").bind(JSON.stringify({...JSON.parse(row!.data),...input}),new Date().toISOString(),owner,record.id),audit(owner,record.id,"case_updated",`تحديث متابعة الحالة ${record.reference}`)]);
+      if(input.revision!==record.revision)throw new HttpError(409,"تغيرت الحالة؛ حدّث الصفحة قبل حفظ المتابعة.");
+      const {revision,...changes}=input;
+      await db().batch([db().prepare("UPDATE cases SET data=?,updated_at=? WHERE owner=? AND id=? AND revision=?").bind(JSON.stringify({...JSON.parse(row!.data),...changes}),new Date().toISOString(),owner,record.id,revision),audit(owner,record.id,"case_updated",`تحديث متابعة الحالة ${record.reference}`)]);
       return json(await getCase(owner,path[1]));
     }
     if(path[0]==="documents"&&!path[1]&&method==="POST")return json(await addDocument(owner,request),201);
     if(path[0]==="documents"&&path[1]&&path[2]==="file"&&method==="GET"){
       const row=await documentRow(owner,path[1]);const doc=unpackDoc(row);const object=await bucket().get(row.object_key);if(!object)throw new HttpError(404,"بيانات المستند غير متاحة في مخزن الملفات.");
+      if(await hash(object.body)!==row.sha256)throw new HttpError(423,"بصمة الملف لا تطابق النسخة المحفوظة. أوقف عرض المستند لحين مراجعة المسؤول.");
       return new Response(object.body,{headers:{...securityHeaders,"Content-Type":doc.contentType,"Content-Disposition":`inline; filename*=UTF-8''${encodeURIComponent(doc.filename)}`,"Content-Security-Policy":"sandbox; default-src 'none'; style-src 'unsafe-inline'"}});
     }
     if(path[0]==="documents"&&path[1]&&method==="PATCH"){
@@ -182,7 +212,7 @@ export async function handle(request:Request):Promise<Response>{
       const intent=directIntent(input.query)??(input.semantic?input.intent??null:null);
       const fallback=answerFromRecord(record,intent,input.semantic?"semantic":"direct");
       const travelerAnswer=answerTravelerQuery(record,input.query);
-      const answer=travelerAnswer||(input.provider==="local"?fallback:await answerWithGroq(record,input.query,fallback,env));
+      const answer=travelerAnswer||(input.provider==="local"?fallback:await answerWithGroq(record,input.query,fallback,await allowedAiEnv(owner)));
       await audit(owner,record.id,"assistant_used",`مراجعة مستندات الملف؛ ${answer.mode==="generative"?"مسودة مولدة عبر Groq":answer.mode==="semantic"?"فهم دلالي محلي":"إجابة من السجل"}`).run();return json(answer);
     }
     if(path[0]==="packet-snapshots"&&path[1]&&method==="GET"){

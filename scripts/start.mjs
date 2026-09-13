@@ -2,7 +2,7 @@ import { spawn } from 'node:child_process';
 import { resolve } from 'node:path';
 
 const args = process.argv.slice(2);
-const port = args.some(value => value === '--port' || value.startsWith('--port=')) ? [] : ['--port', '5173'];
+const port = args.some(value => value === '--port' || value.startsWith('--port=')) ? [] : ['--port', '5174'];
 const child = spawn(process.execPath, [
   resolve('node_modules/wrangler/bin/wrangler.js'), 'dev',
   '--config', resolve('dist/server/wrangler.json'),
