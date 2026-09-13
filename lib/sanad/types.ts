@@ -13,6 +13,7 @@ export type StoredDocument = {
   extractionMethod: "manual" | "tesseract" | "synthetic"; revision: number;
 };
 export type CaseRecord = {
+  revision?: number;
   details?: import("./traveler").CaseDetails;
   id: string; reference: string; name: string; englishName: string;
   borderNumber: string; visaNumber: string; passportNumber: string;

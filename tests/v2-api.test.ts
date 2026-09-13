@@ -1,0 +1,44 @@
+import type {Workflow,Change,simulate} from '../lib/sanad/integrated';
+type Journal={integrity:{valid:boolean;pending:number;total:number;signed:number};events:{entity:string;actor:string;signature:string;changes:Change[]}[]};
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {base,request} from './session';
+import type {CaseRecord} from '../lib/sanad/types';
+
+async function login(username:string,password:string){const r=await fetch(base+'/api/auth/login',{method:'POST',headers:{origin:base,'content-type':'application/json'},body:JSON.stringify({username,password})});assert.equal(r.status,200,await r.clone().text());return r.headers.get('set-cookie')!.split(';')[0];}
+async function as(cookie:string,path:string,method='GET',body?:unknown,extra:Record<string,string>={}){return fetch(base+path,{method,headers:{cookie,origin:base,'content-type':'application/json','x-sanad-reason':encodeURIComponent('تعديل اصطناعي لاختبار تكامل النسخة الثانية'),...extra},body:body===undefined?undefined:JSON.stringify(body)});}
+test('Integrated v2: role boundaries, immutable approval, audit, simulations, and session revocation',async()=>{
+ const state=await(await request('/api/state')).json() as {cases:CaseRecord[]};assert.ok(state.cases.length>=6,'Run setup-demo first');
+ const accounts=JSON.parse(readFileSync('work/team-private.json','utf8')) as {username:string;password:string;role:string}[];
+ const officer=accounts.find(a=>a.role==='officer')!;const reviewer=accounts.find(a=>a.role==='reviewer')!;const viewer=accounts.find(a=>a.role==='viewer')!;
+ const oc=await login(officer.username,officer.password),rc=await login(reviewer.username,reviewer.password),vc=await login(viewer.username,viewer.password);
+ for(const path of ['/api/security','/api/users'])assert.equal((await as(oc,path)).status,403);
+ assert.equal((await as(vc,'/api/cases','POST',{})).status,403);
+ assert.equal((await as(oc,'/api/decisions','POST',{})).status,403);
+ assert.equal((await as(vc,'/api/state')).status,200);
+ assert.equal((await fetch(base+'/api/state',{headers:{cookie:'sanad_session='+ 'a'.repeat(64)}})).status,401,'V1 cookie is not valid in v2');
+ const record=state.cases.find(c=>c.status==='ready'&&c.documents.length===1)!;assert.ok(record);
+ const doc=record.documents[0];
+ assert.equal((await as(oc,`/api/documents/${doc.id}`,'PATCH',{fields:doc.fields,reviewStatus:'approved',reviewNote:'محاولة غير مخولة للاعتماد',revision:doc.revision})).status,403);
+ let current=await(await request(`/api/cases/${record.id}`)).json() as CaseRecord;
+ let workflow=await(await request(`/api/workflow/${record.id}`)).json() as Workflow;
+ const markReady=()=>as(rc,`/api/workflow/${record.id}`,'PATCH',{revision:workflow.revision,stage:'ready',reason:'اعتماد مشرف اختبار للنسخة الاصطناعية الحالية',assignee:'',expectedDays:3});
+ assert.equal((await markReady()).status,200);workflow=await(await request(`/api/workflow/${record.id}`)).json();assert.equal(workflow.needsReview,false);
+ const edit={notes:'متابعة اصطناعية بعد اعتماد الجاهزية '+crypto.randomUUID(),consularStatus:'under_review',revision:current.revision};
+ assert.equal((await as(oc,`/api/cases/${record.id}`,'PATCH',edit)).status,200);
+ workflow=await(await request(`/api/workflow/${record.id}`)).json();assert.equal(workflow.needsReview,true);
+ assert.equal((await as(rc,`/api/workflow/${record.id}`,'PATCH',{revision:workflow.revision,stage:'closed',reason:'محاولة إغلاق قبل إعادة المراجعة',assignee:'',expectedDays:3})).status,400);
+ assert.equal((await as(oc,`/api/cases/${record.id}`,'PATCH',edit)).status,409,'Stale case revision rejected');
+ const journal=await(await request(`/api/journal/${record.id}`)).json() as Journal;assert.equal(journal.integrity.valid,true);assert.equal(journal.integrity.pending,0);
+ const event=journal.events.find((e)=>e.entity==='cases'&&e.changes.some((c)=>c.field==='notes'&&c.after===edit.notes));assert.ok(event);assert.equal(event.actor,'موظف المعالجة التجريبي');assert.ok(event.signature);assert.ok(!JSON.stringify(journal).includes(officer.password));
+ const inputs={reviewers:1,additional:1,minutesPerCase:30,productiveHours:6,arrivalsPerDay:15,horizonDays:7};
+ const sim=await as(vc,'/api/simulation','POST',inputs);assert.equal(sim.status,200);const data=await sim.json() as ReturnType<typeof simulate>;assert.equal(data.kind,'capacity_simulation');assert.equal(data.proposed.capacityPerDay,24);
+ assert.equal((await as(rc,'/api/decisions','POST',{inputs,decision:'approved',reason:'اعتماد خطة افتراضية لزيادة سعة المراجعة'})).status,201);
+ const security=await(await request('/api/security')).json() as {settings:{externalAi:boolean};events:{kind:string}[]};assert.equal(security.settings.externalAi,false);assert.ok(security.events.some((e)=>e.kind==='permission_denied'));
+ const members=await(await request('/api/users')).json() as {id:string;username:string;revision:number}[];const target=members.find(u=>u.username===viewer.username);assert.ok(target);
+ assert.equal((await request(`/api/users/${target.id}`,'PATCH',{role:'viewer',active:true,revoke:true,revision:target.revision})).status,200);
+ assert.equal((await as(vc,'/api/state')).status,401,'Revoked session immediately stops working');
+ current=await(await request(`/api/cases/${record.id}`)).json();workflow=await(await request(`/api/workflow/${record.id}`)).json();assert.equal((await markReady()).status,200);
+ const final=await(await request('/api/journal')).json() as Journal;assert.equal(final.integrity.valid,true);assert.equal(final.integrity.total,final.integrity.signed);
+});

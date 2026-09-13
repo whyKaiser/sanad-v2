@@ -8,7 +8,7 @@ import type { CaseRecord, StoredDocument } from '../lib/sanad/types';
 const record = (i = 0): CaseRecord => { const r = { ...demoRecord(i), id: `CASE-${i}`, reference: `DEMO-${i}`, createdAt: '', updatedAt: '', documents: [], status: 'needs_document' as const }; return { ...r, details: demoDetails(r, i) }; };
 const asOf = { value: '2026-09-12', calendar: 'gregorian' as const };
 test('Legacy details gain empty deadline fields without inventing values', () => {
-  const d = emptyDetails(); delete (d.profile.dates as any).departureDeadline;
+  const d = emptyDetails(); delete (d.profile.dates as Partial<typeof d.profile.dates>).departureDeadline;
   assert.equal(normalizeDetails(d).profile.dates.departureDeadline.value, '');
   assert.equal(followupStatus(record(), asOf), 'needs_data');
 });

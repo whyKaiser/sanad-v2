@@ -1,7 +1,8 @@
 import { readFileSync, existsSync } from 'node:fs';
-export const base=process.env.SANAD_TEST_URL||'http://localhost:5173';
+export const base=process.env.SANAD_TEST_URL||'http://localhost:5174';
 if(!/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(base))throw Error('Integration tests are restricted to loopback.');
 const credentials=process.env.SANAD_TEST_PASSWORD?{username:process.env.SANAD_TEST_USERNAME||'admin',password:process.env.SANAD_TEST_PASSWORD}:existsSync('work/login-private.json')?JSON.parse(readFileSync('work/login-private.json','utf8')):null;
+const originalFetch=globalThis.fetch;globalThis.fetch=(url,options)=>originalFetch(url,{...options,signal:options?.signal||AbortSignal.timeout(30000)});
 let session:Promise<string>|undefined;
 export function sessionCookie(){
   return session??= (async()=>{
@@ -12,5 +13,5 @@ export function sessionCookie(){
   })();
 }
 export async function request(path:string,method='GET',body?:unknown,extra:Record<string,string>={}){
-  return fetch(base+path,{method,headers:{cookie:await sessionCookie(),origin:base,...(body instanceof FormData?{}:{'content-type':'application/json'}),...extra},body:body instanceof FormData?body:body===undefined?undefined:JSON.stringify(path==='/api/assistant'?{...(body as object),provider:'local'}:body)});
+  return fetch(base+path,{method,headers:{cookie:await sessionCookie(),origin:base,'x-sanad-reason':encodeURIComponent('تعديل اصطناعي للتحقق الآلي من السلوك'),...(body instanceof FormData?{}:{'content-type':'application/json'}),...extra},body:body instanceof FormData?body:body===undefined?undefined:JSON.stringify(path==='/api/assistant'?{...(body as object),provider:'local'}:body)});
 }

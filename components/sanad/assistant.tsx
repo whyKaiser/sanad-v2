@@ -12,7 +12,9 @@ export default function Assistant({record,onEvidence}:{record:CaseRecord;onEvide
   const [groqReady,setGroqReady]=useState(false);const [provider,setProvider]=useState<"groq"|"local">("local");
   useEffect(()=>{let mounted=true;api<{generativeConfigured:boolean}>("/api/ai-config").then(config=>{if(mounted){setGroqReady(config.generativeConfigured);setProvider(config.generativeConfigured?"groq":"local");}}).catch(()=>{});return()=>{mounted=false;};},[]);
   const worker=useRef<Worker|null>(null);const pending=useRef(new Map<string,{resolve:(v:{intent:Intent|null;score:number})=>void;reject:(e:Error)=>void;timer:ReturnType<typeof setTimeout>}>());const active=useRef(record.id);
-  useEffect(()=>{active.current=record.id;setAnswer(null);setQuestion("");setError("");},[record.id,record.updatedAt]);
+  useEffect(()=>{active.current=record.id;},[record.id]);
+  const recordVersion=record.id+record.updatedAt;const [answerVersion,setAnswerVersion]=useState(recordVersion);
+  if(answerVersion!==recordVersion){setAnswerVersion(recordVersion);setAnswer(null);setQuestion("");setError("");}
   useEffect(()=>()=>{worker.current?.terminate();pending.current.forEach(p=>{clearTimeout(p.timer);p.reject(Error("المساعد أغلق"));});pending.current.clear();},[]);
   function call(type:"load"|"query",text?:string){
     if(!worker.current){worker.current=new Worker("/ai/semantic-worker.js",{type:"module"});worker.current.onmessage=event=>{

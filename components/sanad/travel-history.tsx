@@ -18,7 +18,9 @@ export default function TravelHistory({ record, onRefresh, focusId, onDocument }
   const [editId, setEditId] = useState(""), [revision, setRevision] = useState(details.revision), [latest, setLatest] = useState(false);
   const blank = (): Draft => ({ reference: "", visaNumber: record.visaNumber, source: "", entry: emptyLeg(), exit: emptyLeg() });
   const [draft, setDraft] = useState<Draft>(blank);
-  useEffect(() => { if (focusId) { setExpanded(v => v.includes(focusId) ? v : [...v, focusId]); requestAnimationFrame(() => document.getElementById(`movement-${focusId}`)?.scrollIntoView({ block: "nearest", behavior: "smooth" })); } }, [focusId]);
+  const [lastFocus,setLastFocus]=useState<string|undefined>(undefined);
+  if(focusId!==lastFocus){setLastFocus(focusId);if(focusId)setExpanded(v=>v.includes(focusId)?v:[...v,focusId]);}
+  useEffect(() => { if (focusId) { const frame=requestAnimationFrame(() => document.getElementById(`movement-${focusId}`)?.scrollIntoView({ block: "nearest", behavior: "smooth" }));return()=>cancelAnimationFrame(frame); } }, [focusId]);
   function edit(m?: TravelMovement) { setDraft(m ? structuredClone({ reference: m.reference, visaNumber: m.visaNumber, source: m.source, entry: m.entry, exit: m.exit }) : blank()); setEditId(m?.id || ""); setRevision(details.revision); setLatest(m?.id === details.latestEntryId); setError(""); setOpen(true); }
   function leg(side: "entry" | "exit", patch: Partial<TravelLeg>) { setDraft(d => ({ ...d, [side]: { ...d[side], ...patch } })); }
   async function save(e: React.FormEvent) { e.preventDefault(); setBusy(true); setError(""); try { await api(`/api/cases/${record.id}/travel${editId ? `/${editId}` : ""}`, { method: editId ? "PATCH" : "POST", body: JSON.stringify({ revision, movement: draft, setLatestEntry: latest }) }); await onRefresh(); setOpen(false); toast.success("حُفظت حركة السفر وربط الوثائق"); } catch (e) { setError((e as Error).message); } finally { setBusy(false); } }
