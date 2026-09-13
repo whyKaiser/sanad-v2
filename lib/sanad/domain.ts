@@ -30,8 +30,8 @@ export const intentExamples: Record<Intent,string[]> = {
 };
 export function directIntent(query: string): Intent | null {
   const q=normalize(query);
+  if(/اختلاف|[ايتن]ختلف|مختلف|فرق|فروق|قارن|مقارن|تفاوت|تعارض|مطابق|DIFFER|CONFLICT|COMPARE/.test(q))return "differences";
   if(/جنسي|دول|COUNTRY|NATIONALITY/.test(q))return "nationality";
-  if(/اختلاف|اختلف|مختلف|فرق|فروق|تفاوت|تعارض|مطابق|DIFFER|CONFLICT/.test(q))return "differences";
   if(/بديل|مرور|REPLACEMENT/.test(q))return "replacement";
   if(/مصدر|متي|SOURCE/.test(q))return "source";
   if(/ملخص|لخص|جهز|ناقص|ينقص|SUMMARY/.test(q))return "summary";

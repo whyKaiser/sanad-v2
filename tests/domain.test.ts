@@ -14,6 +14,11 @@ test('Name discrepancy is detected without changing entry record',()=>{const doc
 test('Alternative document may have a different number without a false conflict',()=>assert.deepEqual(discrepancies(r,{...d,type:'travel_document',fields:{...d.fields,passportNumber:'ALTERNATIVE-001'}}),[]));
 test('Every answer citation resolves to a saved document field',()=>{const a=answerFromRecord({...r,documents:[d]},'summary');for(const e of a.evidence){assert.equal(e.documentId,d.id);assert.equal(e.value,d.fields[e.field!]);}});
 test('Unsupported query does not fabricate an answer',()=>{const i=directIntent('كم سعر الذهب؟');assert.equal(i,null);assert.deepEqual(answerFromRecord(r,i).evidence,[]);});
+
+test('Colloquial comparison requests take precedence over generic document or nationality wording',()=>{
+ for(const query of ['وضح لي وين يختلف المكتوب في نسخة المستند عن معلومات الوصول','هل تختلف الجنسية المكتوبة بين السجل والوثيقة؟','قارن لي اسم الجواز بالاسم في السجل'])assert.equal(directIntent(query),'differences');
+ assert.equal(directIntent('ما الجنسية المكتوبة في الجواز؟'),'nationality');
+});
 test('Nationality answer is explicitly only document transcription',()=>assert.match(answerFromRecord({...r,documents:[d]},'nationality').text,/لا تمثل قرارًا مستقلًا/));
 test('Reject invalid dates and real-data flag',()=>{assert.equal(dateString.safeParse('2026-02-30').success,false);assert.equal(dateString.safeParse('2024-02-29').success,true);const {consularStatus,...input}=demoRecord(0);assert.equal(newCaseSchema.safeParse({...input,synthetic:false}).success,false);});
 test('Cannot approve incomplete review',()=>assert.equal(reviewSchema.safeParse({fields:{...d.fields,passportNumber:''},reviewStatus:'approved',reviewNote:'',revision:1}).success,false));
