@@ -17,7 +17,7 @@ for(const [username,displayName,role] of [['officer','موظف المعالجة 
  }
 }
 writeFileSync('work/team-private.json',JSON.stringify(known,null,2));
-writeFileSync('work/team-private.txt',['سَنَد ٢ — حسابات العرض الخاصة',`الرابط: ${base}`,'',`المسؤول: ${credentials.username}`,`كلمة المرور: ${credentials.password}`,...known.flatMap(u=>['',`${u.role}: ${u.username}`,`كلمة المرور: ${u.password}`]),'','ملف خاص مستثنى من Git ومن الحزمة العامة.'].join('\n'));
+if(!process.env.SANAD_TEST_URL)writeFileSync('work/team-private.txt',['سَنَد ٢ — حسابات العرض الخاصة',`الرابط: ${base}`,'',`المسؤول: ${credentials.username}`,`كلمة المرور: ${credentials.password}`,...known.flatMap(u=>['',`${u.role}: ${u.username}`,`كلمة المرور: ${u.password}`]),'','ملف خاص مستثنى من Git ومن الحزمة العامة.'].join('\n'));
 let state=await api('/api/state');if(!state.cases.length)state=await api('/api/demo','POST',{});
 users=await api('/api/users');const officer=users.find(u=>u.role==='officer');
 const demo=state.cases.filter(c=>/^SND-2026-000[1-6]$/.test(c.reference)).sort((a,b)=>a.reference.localeCompare(b.reference));
