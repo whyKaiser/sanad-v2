@@ -1,3 +1,4 @@
+import { aiConfiguration } from "./ai-config";
 import { env } from "cloudflare:workers";
 import { z } from "zod";
 import type { User, StaffRow } from "./auth";
@@ -10,6 +11,7 @@ import {reviewSignals} from './review-signals';
 function json(data:unknown,status=200){return Response.json(data,{status,headers:{"Cache-Control":"no-store","X-Content-Type-Options":"nosniff"}});}
 async function body(request:Request){const text=await request.text();if(text.length>100000)throw new GovernanceError(413,"حجم الطلب غير مسموح.");return JSON.parse(text);}
 export async function settings(owner:string){const row=await database().prepare("SELECT data,revision FROM workspace_settings WHERE owner=?").bind(owner).first<{data:string;revision:number}>();return {...(row?JSON.parse(row.data):{externalAi:false}),revision:row?.revision||0};}
+export async function publicAiConfig(owner:string){return aiConfiguration(env,(await settings(owner)).externalAi);}
 export async function allowedAiEnv(owner:string){const config=await settings(owner);return {...env,GROQ_API_KEY:config.externalAi?env.GROQ_API_KEY:undefined};}
 export async function authorize(user:User,request:Request){
  const path=new URL(request.url).pathname;const method=request.method;let denied=false;
@@ -60,7 +62,7 @@ export async function governanceHandle(request:Request,user:User,getCase:(id:str
   await db.prepare("INSERT INTO operational_decisions(id,owner,data,created_at) VALUES (?,?,?,?)").bind(id,owner,JSON.stringify(data),now).run();return json({id,...data,createdAt:now},201);
  }
  if(path[0]==="security"&&method==="GET"){
-  return json({settings:await settings(owner),integrity:await verifyIntegrity(owner),events:(await db.prepare("SELECT id,actor,kind,detail,created_at AS createdAt FROM security_events WHERE owner=? ORDER BY created_at DESC LIMIT 100").bind(owner).all()).results,sessions:(await db.prepare("SELECT username,COUNT(*) AS count FROM auth_sessions WHERE owner=? AND expires_at>? GROUP BY username").bind(owner,Date.now()).all()).results});
+  return json({settings:await settings(owner),ai:await publicAiConfig(owner),integrity:await verifyIntegrity(owner),events:(await db.prepare("SELECT id,actor,kind,detail,created_at AS createdAt FROM security_events WHERE owner=? ORDER BY created_at DESC LIMIT 100").bind(owner).all()).results,sessions:(await db.prepare("SELECT username,COUNT(*) AS count FROM auth_sessions WHERE owner=? AND expires_at>? GROUP BY username").bind(owner,Date.now()).all()).results});
  }
  if(path[0]==="security"&&path[1]==="settings"&&method==="PATCH"){
   const input=z.object({externalAi:z.boolean(),revision:z.number().int().nonnegative()}).strict().parse(await body(request));const current=await settings(owner);

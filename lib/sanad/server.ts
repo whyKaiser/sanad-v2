@@ -1,6 +1,6 @@
 import { operationsHandle, OperationsError } from "./operations-server";
 import { beginMutation, finishMutation, GovernanceError } from "./integrity-server";
-import { allowedAiEnv, authorize, governanceHandle } from "./governance-server";
+import { allowedAiEnv, publicAiConfig, authorize, governanceHandle } from "./governance-server";
 import { validationMessage } from "./validation-messages";
 import { answerTravelerQuery, emptyDetails, normalizeDetails, profileUpdateSchema, movementUpdateSchema, type CaseDetails } from "./traveler";
 import { travelerPrintHtml } from "./traveler-print";
@@ -13,7 +13,7 @@ import { caseStatus, answerFromRecord, directIntent, discrepancies, escapeHtml }
 import { assistantSchema, caseUpdateSchema, detectedMime, fieldsSchema, newCaseSchema, reviewSchema, dateString, locationSchema } from "./validation";
 import { demoDetails } from "./traveler-demo";
 import { demoCases, demoRecord, syntheticLocations, syntheticSvg } from "./demo";
-import { answerWithGroq, groqConfiguration } from "./groq";
+import { answerWithGroq } from "./groq";
 
 class HttpError extends Error { constructor(public status:number,message:string){super(message);} }
 function db(){if(!env.DB)throw new HttpError(503,"قاعدة البيانات غير متاحة. حاول مجددًا بعد قليل.");return env.DB;}
@@ -53,7 +53,7 @@ async function state(owner:string){
     db().prepare("SELECT id,case_id AS caseId,action,detail,created_at AS createdAt FROM audit_log WHERE owner=? ORDER BY created_at DESC LIMIT 150").bind(owner).all<AuditEvent>(),
     db().prepare("SELECT * FROM case_details WHERE owner=?").bind(owner).all<DetailsRow>(),
   ]);
-  return {cases:rows.results.map(row=>{const documents=docs.results.filter(d=>d.case_id===row.id).map(unpackDoc);return {...JSON.parse(row.data),id:row.id,reference:row.reference,revision:row.revision,createdAt:row.created_at,updatedAt:row.updated_at,documents,status:caseStatus(documents),details:unpackDetails(details.results.find(d=>d.case_id===row.id))};}),audit:events.results,ai:groqConfiguration(await allowedAiEnv(owner)),demoOnly:true};
+  return {cases:rows.results.map(row=>{const documents=docs.results.filter(d=>d.case_id===row.id).map(unpackDoc);return {...JSON.parse(row.data),id:row.id,reference:row.reference,revision:row.revision,createdAt:row.created_at,updatedAt:row.updated_at,documents,status:caseStatus(documents),details:unpackDetails(details.results.find(d=>d.case_id===row.id))};}),audit:events.results,ai:await publicAiConfig(owner),demoOnly:true};
 }
 async function body(request:Request){const raw=await request.text();if(raw.length>100_000)throw new HttpError(413,"الطلب أكبر من الحد المسموح.");try{return JSON.parse(raw);}catch{throw new HttpError(400,"صيغة الطلب غير صحيحة.");}}
 async function hash(data:ArrayBuffer|Uint8Array){const h=await crypto.subtle.digest("SHA-256",data as BufferSource);return Array.from(new Uint8Array(h)).map(b=>b.toString(16).padStart(2,"0")).join("");}
@@ -153,7 +153,7 @@ async function handleRequest(request:Request):Promise<Response>{
     const operation=await operationsHandle({database:db(),owner,request,path,method,getCase:id=>getCase(owner,id),audit:(caseId,action,detail)=>audit(owner,caseId,action,detail)});
     if(operation)return operation;
     if(path[0]==="state"&&method==="GET")return json(await state(owner));
-    if(path[0]==="ai-config"&&method==="GET")return json(groqConfiguration(await allowedAiEnv(owner)));
+    if(path[0]==="ai-config"&&method==="GET")return json(await publicAiConfig(owner));
     if(path[0]==="demo"&&method==="POST"){await seed(owner);return json(await state(owner),201);}
     if(path[0]==="cases"&&!path[1]&&method==="POST"){
       const input=newCaseSchema.parse(await body(request));const id=crypto.randomUUID();const now=new Date().toISOString();const reference=`SND-${new Date().getUTCFullYear()}-${id.slice(0,8).toUpperCase()}`;

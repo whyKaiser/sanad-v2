@@ -20,6 +20,10 @@ test('Integrated v2: role boundaries, immutable approval, audit, simulations, an
  assert.equal((await fetch(base+'/api/state',{headers:{cookie:'sanad_session='+ 'a'.repeat(64)}})).status,401,'V1 cookie is not valid in v2');
  const record=state.cases.find(c=>c.status==='ready'&&c.documents.length===1)!;assert.ok(record);
  const doc=record.documents[0];
+ for(const [path,method] of [[`/api/documents/${doc.id}`,'PATCH'],[`/api/cases/${record.id}/profile`,'PUT'],[`/api/cases/${record.id}/travel`,'POST'],[`/api/cases/${record.id}/directives`,'POST'],['/api/intake','POST'],[`/api/packet/${record.id}`,'POST']])assert.equal((await as(vc,path,method,{})).status,403,path);
+ for(const [path,method] of [['/api/intake/synthetic-only/review','PATCH'],['/api/intake/synthetic-only/dispatch','POST'],['/api/directives/synthetic-only/prepare','POST']])assert.equal((await as(oc,path,method,{})).status,403,path);
+ const ai=await(await as(vc,'/api/ai-config')).json() as {keyConfigured:boolean;externalAllowed:boolean;status:string;generativeConfigured:boolean};
+ assert.equal(ai.externalAllowed,false);assert.equal(ai.generativeConfigured,false);assert.equal(ai.status,ai.keyConfigured?'disabled':'missing_key');
  assert.equal((await as(oc,`/api/documents/${doc.id}`,'PATCH',{fields:doc.fields,reviewStatus:'approved',reviewNote:'محاولة غير مخولة للاعتماد',revision:doc.revision})).status,403);
  let current=await(await request(`/api/cases/${record.id}`)).json() as CaseRecord;
  let workflow=await(await request(`/api/workflow/${record.id}`)).json() as Workflow;

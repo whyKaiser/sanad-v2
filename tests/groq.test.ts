@@ -1,6 +1,15 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { answerWithGroq, groqConfiguration } from "../lib/sanad/groq";
+import { aiConfiguration } from '../lib/sanad/ai-config';
+
+test('AI diagnostics distinguish absent secrets from disabled policy without leaking secrets',()=>{
+ const env={GROQ_API_KEY:'test-secret-never-return',GROQ_MODEL:'openai/gpt-oss-20b'};
+ assert.equal(aiConfiguration({},false).status,'missing_key');
+ const disabled=aiConfiguration(env,false);assert.equal(disabled.status,'disabled');assert.equal(disabled.keyConfigured,true);assert.equal(disabled.generativeConfigured,false);
+ const enabled=aiConfiguration(env,true);assert.equal(enabled.status,'enabled');assert.equal(enabled.generativeConfigured,true);
+ assert.ok(!JSON.stringify([disabled,enabled]).includes(env.GROQ_API_KEY));
+});
 import { answerFromRecord } from "../lib/sanad/domain";
 import { demoRecord } from "../lib/sanad/demo";
 import type { CaseRecord, StoredDocument } from "../lib/sanad/types";
@@ -33,6 +42,13 @@ test("Groq uses server authorization, minimal evidence, validated references and
 test("Invented references discard generated text", async () => {
   const result = await answerWithGroq(record, "لخص الملف", fallback, environment, async () => response({ text: "UNTRUSTED ANSWER", evidenceIds: ["foreign-document:name"] }));
   assert.equal(result.mode, "direct"); assert.equal(result.text, fallback.text); assert.match(result.warning!, /تعذر/);
+});
+
+test('Generated issuance claims and invented document names return the authoritative record instead',async()=>{
+ for(const text of ['بعد اعتماد المستندات، يتم إصدار وثيقة السفر.','توجد نسخة جواز مرور تمت مراجعتها.','القنصلية تُصْدِر وثيقة السفر بعد الاعتماد.','The travel document will be issued after approval.']){
+  const result=await answerWithGroq(record,'لخص الملف',fallback,environment,async()=>response({text,evidenceIds:['document-1:name']}));
+  assert.equal(result.mode,'direct');assert.equal(result.text,fallback.text);assert.ok(result.warning);
+ }
 });
 test("Rate limit, rejected key and provider outage return grounded answers without leaking provider bodies", async () => {
   for (const status of [302, 307, 429, 401, 403, 503]) {
