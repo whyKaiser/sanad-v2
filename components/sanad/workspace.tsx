@@ -17,6 +17,7 @@ import ChangeReason, {askChangeReason} from "./change-reason";
 import {OperationsPanel,SecurityPanel,YaqeenPanel,SignalsPanel} from "./integrated-panels";
 import { permissionsFor } from "@/lib/sanad/permissions";
 import {roleLabels,type Role} from "@/lib/sanad/integrated";
+import ForecastPanel from './forecast-panel';
 
 export async function api<T>(url:string,options?:RequestInit):Promise<T>{
   const headers=new Headers(options?.headers);if(options&&["PATCH","PUT"].includes(options.method||"")&&!headers.has("x-sanad-reason"))headers.set("x-sanad-reason",encodeURIComponent(await askChangeReason()));
@@ -24,8 +25,8 @@ export async function api<T>(url:string,options?:RequestInit):Promise<T>{
   const result=await response.json().catch(()=>{throw new Error("تعذر قراءة رد الخادم. حدّث الحالة للتحقق من الحفظ قبل إعادة المحاولة.");}) as T & {error?:string};if(!response.ok)throw new Error(result.error||"تعذر الاتصال بسَنَد.");return result;
 }
 type State={cases:CaseRecord[];audit:AuditEvent[];demoOnly:boolean};
-type View="cases"|"documents"|"audit"|"guide"|"intake"|"analytics"|"operations"|"security"|"yaqeen"|"signals";
-const navItems=[{id:"signals" as View,label:"مؤشرات المراجعة",icon:ScanLine},{id:"operations" as View,label:"الضغط والتخطيط",icon:BarChart3},{id:"yaqeen" as View,label:"موثوقية السجلات",icon:ShieldCheck},{id:"security" as View,label:"الحسابات والحماية",icon:ShieldCheck},{id:"intake" as View,label:"ما قبل الوصول",icon:PlaneLanding},{id:"analytics" as View,label:"الإحصاءات والمتابعة",icon:BarChart3},{id:"cases" as View,label:"مساحة العمل",icon:LayoutDashboard},{id:"documents" as View,label:"مكتبة الوثائق",icon:FolderOpen},{id:"audit" as View,label:"سجل المراجعات",icon:History},{id:"guide" as View,label:"دليل سَنَد",icon:BookOpen}];
+type View="cases"|"documents"|"audit"|"guide"|"intake"|"analytics"|"operations"|"security"|"yaqeen"|"signals"|"forecast";
+const navItems=[{id:"forecast" as View,label:"توقع الإقبال",icon:PlaneLanding},{id:"signals" as View,label:"مؤشرات المراجعة",icon:ScanLine},{id:"operations" as View,label:"الضغط والتخطيط",icon:BarChart3},{id:"yaqeen" as View,label:"موثوقية السجلات",icon:ShieldCheck},{id:"security" as View,label:"الحسابات والحماية",icon:ShieldCheck},{id:"intake" as View,label:"ما قبل الوصول",icon:PlaneLanding},{id:"analytics" as View,label:"الإحصاءات والمتابعة",icon:BarChart3},{id:"cases" as View,label:"مساحة العمل",icon:LayoutDashboard},{id:"documents" as View,label:"مكتبة الوثائق",icon:FolderOpen},{id:"audit" as View,label:"سجل المراجعات",icon:History},{id:"guide" as View,label:"دليل سَنَد",icon:BookOpen}];
 export function StatusBadge({status}:{status:CaseStatus}){return <span className={`status-badge ${status}`}><span/>{statusLabels[status]}</span>;}
 export function formatDate(date:string){if(!date)return "—";return new Intl.DateTimeFormat("ar-SA-u-ca-gregory",{day:"numeric",month:"short",year:"numeric"}).format(new Date(date));}
 function Navigation({view,onNavigate,displayName,role}:{view:View;onNavigate:(v:View)=>void;displayName:string;role:Role}){
@@ -52,6 +53,7 @@ export default function Workspace({displayName,role}:{displayName:string;role:Ro
   return <SidebarProvider style={{"--sidebar-width":"16rem"} as React.CSSProperties}><Navigation view={view} onNavigate={navigate} displayName={displayName} role={role}/><main className="workspace"><header className="topbar"><div className="topbar-title"><SidebarTrigger aria-label="فتح القائمة"/><span>إدارة وثائق السفر</span><ChevronLeft size={14}/><strong>{selected?selected.reference:navItems.find(n=>n.id===view)?.label}</strong></div><div className="topbar-tools"><span className="demo-chip"><span/>بيئة تجريبية</span><button className="icon-button" aria-label="تحديث البيانات" onClick={()=>void refresh()}><RefreshCw size={18}/></button><div className="top-avatar">س</div></div></header><div className="workspace-body">
     {loadError?<div className="error-panel" role="alert"><FileWarning/><h2>تعذر تحميل مساحة العمل</h2><p>{loadError}</p><Button onClick={()=>{setLoading(true);void refresh();}}>إعادة المحاولة</Button></div>:loading?<div className="loading-state" role="status"><Loader2 className="spin"/><p>تحميل ملفاتك…</p></div>:selected?<CaseDetail record={selected} audit={state.audit.filter(a=>a.caseId===selected.id)} onBack={()=>setSelectedId(null)} onUpload={()=>setUploadCase(selected)} onRefresh={refresh} role={role}/>:<>
       {view==="operations"&&<OperationsPanel records={state.cases} role={role} onOpenCase={id=>{void refresh();setSelectedId(id);setView("cases");}}/>}
+      {view==="forecast"&&<ForecastPanel/>}
       {view==="signals"&&<SignalsPanel onOpenCase={id=>{void refresh();setSelectedId(id);setView("cases");}}/>}
       {view==="yaqeen"&&<YaqeenPanel/>}
       {view==="security"&&role==="admin"&&<SecurityPanel/>}

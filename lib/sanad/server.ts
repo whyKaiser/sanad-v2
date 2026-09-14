@@ -1,6 +1,8 @@
 import { operationsHandle, OperationsError } from "./operations-server";
 import { beginMutation, finishMutation, GovernanceError } from "./integrity-server";
 import { allowedAiEnv, publicAiConfig, authorize, governanceHandle } from "./governance-server";
+import {forecastHandle} from './forecast-server';
+import {ForecastError} from './forecast';
 import { validationMessage } from "./validation-messages";
 import { answerTravelerQuery, emptyDetails, normalizeDetails, profileUpdateSchema, movementUpdateSchema, type CaseDetails } from "./traveler";
 import { travelerPrintHtml } from "./traveler-print";
@@ -123,18 +125,18 @@ export async function handle(request:Request):Promise<Response>{
     const user=await getCurrentUser(request);if(!user)return json({error:"سجل الدخول للوصول إلى سَنَد ٢."},401);
     if(request.method!=='GET'&&(request.headers.get('origin')!==url.origin||request.headers.get('sec-fetch-site')==='cross-site'))return json({error:"مصدر الطلب غير مسموح."},403);
     await authorize(user,request);
-    const writes=request.method!=='GET'&&!['/api/assistant','/api/simulation'].includes(url.pathname);
+    const writes=request.method!=='GET'&&!['/api/assistant','/api/simulation','/api/forecast','/api/forecast/csv','/api/forecast/simulation'].includes(url.pathname);
     let reason='إنشاء سجل أو استكمال إجراء في النسخة التجريبية';
     if(request.headers.has('x-sanad-reason')){try{reason=decodeURIComponent(request.headers.get('x-sanad-reason')!);}catch{throw new GovernanceError(400,'سبب التعديل غير صالح.');}}
     if(writes&&['PATCH','PUT'].includes(request.method)&&!request.headers.has('x-sanad-reason'))throw new GovernanceError(400,'دوّن سبب التعديل ليظهر في سجل التغييرات.');
     if(reason.trim().length<8||reason.length>500)throw new GovernanceError(400,'سبب التعديل من 8 إلى 500 حرف.');
     const token=writes?await beginMutation(user,`${request.method} ${url.pathname}`,reason):null;
     try {
-      const response=await governanceHandle(request,user,id=>getCase(user.owner,id),async()=>(await state(user.owner)).cases);
+      const response=await forecastHandle(request)||await governanceHandle(request,user,id=>getCase(user.owner,id),async()=>(await state(user.owner)).cases);
       return response||await handleRequest(request);
     } finally {if(token)await finishMutation(user.owner,token);}
   } catch(error) {
-    if(error instanceof GovernanceError)return json({error:error.message},error.status);
+    if(error instanceof GovernanceError||error instanceof ForecastError)return json({error:error.message},error.status);
     if(error instanceof HttpError||error instanceof OperationsError)return json({error:error.message},error.status);
     if(error instanceof ZodError)return json({error:error.issues.map(validationMessage).join('؛ ')},400);
     if(error instanceof SyntaxError)return json({error:'صيغة البيانات غير صحيحة.'},400);

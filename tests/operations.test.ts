@@ -40,6 +40,16 @@ test('CSV neutralizes formula prefixes and quotes newlines and delimiters', () =
   assert.equal(csvCell('=SUM(A1)'), '"\'=SUM(A1)"'); assert.equal(csvCell('a,"b"\nc'), '"a,""b""\nc"'); assert.equal(csvCell('  @cmd'), '"\'  @cmd"');
   const r = record(); r.name = '=FAKE()'; assert.ok(analyticsCsv([r], asOf).includes("'=FAKE()"));
 });
+
+test('CSV exports the same follow-up and visa selection as the visible table', () => {
+  const pending = record(0), exited = record(3);
+  pending.visaType = exited.visaType = 'عمل';
+  const csv = analyticsCsv([pending, exited], asOf, 'عمل', 'exit_recorded');
+  assert.ok(csv.includes(exited.reference));
+  assert.ok(!csv.includes(pending.reference));
+  assert.equal(csv.split('\r\n').length, 2);
+  assert.equal(analyticsCsv([pending, exited], asOf, 'زيارة', 'exit_recorded').split('\r\n').length, 1);
+});
 test('Order document readiness requires the original and any available replacement with human review', () => {
   const r = record(); const passport = { id: 'p', type: 'passport', reviewStatus: 'approved' } as StoredDocument, replacement = { id: 't', type: 'travel_document', reviewStatus: 'pending' } as StoredDocument;
   r.documents = [passport, replacement]; assert.equal(directiveReadiness(r, ['t']).ready, false); assert.equal(directiveReadiness(r, ['p']).ready, false); assert.equal(directiveReadiness(r, ['p', 't']).ready, false);

@@ -1,0 +1,299 @@
+{
+  "version": "2026-09-15.1",
+  "target": "non_us_citizen_count",
+  "unit": "non-US passengers per local airport hour",
+  "source": "https://huggingface.co/datasets/digitalhen/us-airport-wait-times",
+  "upstream": "https://awt.cbp.gov/",
+  "license": "CC BY 4.0",
+  "author": "Henry Williams",
+  "sourceSha256": "2eedea8eaa3d5796a9a6adeb7fcafc9e2a2187828f69bf371ac5bfdb546322a5",
+  "rawRows": 36089,
+  "rawSites": 35,
+  "airports": 23,
+  "trainingEnd": "2026-08-12",
+  "testStart": "2026-08-26",
+  "testEnd": "2026-09-12 23:00",
+  "selected": "hgb_0_blend",
+  "validation": {
+    "calendar_baseline": {
+      "rows": 5250,
+      "mae": 114.054,
+      "rmse": 156.3028636669085
+    },
+    "recent_same_hour": {
+      "rows": 5250,
+      "mae": 93.89038095238095,
+      "rmse": 133.65280696462685
+    },
+    "weekly_recent_blend": {
+      "rows": 5250,
+      "mae": 93.96405714285713,
+      "rmse": 133.49414598186908
+    },
+    "hgb_0": {
+      "rows": 5250,
+      "mae": 91.42170649795167,
+      "rmse": 129.89105713019543
+    },
+    "hgb_0_blend": {
+      "rows": 5250,
+      "mae": 91.10455390091636,
+      "rmse": 129.5311786121068
+    },
+    "hgb_1": {
+      "rows": 5250,
+      "mae": 91.65405414736922,
+      "rmse": 129.96407971515376
+    },
+    "hgb_1_blend": {
+      "rows": 5250,
+      "mae": 91.2578845045869,
+      "rmse": 129.5344039402818
+    },
+    "hgb_2": {
+      "rows": 5250,
+      "mae": 91.44952123272243,
+      "rmse": 130.11969138599346
+    },
+    "hgb_2_blend": {
+      "rows": 5250,
+      "mae": 91.20583970456958,
+      "rmse": 129.72108454371133
+    }
+  },
+  "test": {
+    "rows": 6773,
+    "mae": 86.92047817634845,
+    "rmse": 124.11322863499248
+  },
+  "baseline": {
+    "rows": 6773,
+    "mae": 93.96899453713273,
+    "rmse": 135.0254969879845
+  },
+  "improvementPercent": 7.50089579600534,
+  "validationErrorBand80": 148.2300099203605,
+  "testBandCoverage": 0.8138195777351248,
+  "trainingRows": 29316,
+  "selectionTrainRows": 24066,
+  "validationRows": 5250,
+  "lastObservation": "2026-09-12 23:00",
+  "firstObservation": "2026-03-16 00:00",
+  "mode": "historical_demo",
+  "timeBasis": "airport-local-naive",
+  "maxHorizon": 24,
+  "missingPolicy": "missing != zero; exact timestamp lags; missing branches and training-only fallback",
+  "evaluation": "Final chronological test, only observed targets; each lag is >=24h old; no future observations used inside 24h forecasts. Source publication latency is not verified.",
+  "sites": [
+    {
+      "site": "BOS|Terminal E",
+      "rows": 298,
+      "mae": 99.28401097808872,
+      "rmse": 128.78273633493896
+    },
+    {
+      "site": "BWI|Main",
+      "rows": 91,
+      "mae": 23.50022291772663,
+      "rmse": 33.28175778036092
+    },
+    {
+      "site": "CLT|Main",
+      "rows": 158,
+      "mae": 51.46193611367161,
+      "rmse": 61.98130560793447
+    },
+    {
+      "site": "CVG|Concourse B",
+      "rows": 32,
+      "mae": 21.433446988757716,
+      "rmse": 30.4946422324268
+    },
+    {
+      "site": "DEN|International",
+      "rows": 149,
+      "mae": 63.28241015005961,
+      "rmse": 76.65887036176925
+    },
+    {
+      "site": "DFW|Terminal D",
+      "rows": 279,
+      "mae": 101.56180476758911,
+      "rmse": 132.15367238350507
+    },
+    {
+      "site": "DTW|McNamara Terminal",
+      "rows": 154,
+      "mae": 54.21140074972646,
+      "rmse": 74.2861241716552
+    },
+    {
+      "site": "DTW|Warren C Evans Terminal",
+      "rows": 53,
+      "mae": 15.006103433738879,
+      "rmse": 19.74937857809237
+    },
+    {
+      "site": "EWR|Terminal B",
+      "rows": 363,
+      "mae": 93.84904324908469,
+      "rmse": 121.88821554737635
+    },
+    {
+      "site": "EWR|Terminal C",
+      "rows": 148,
+      "mae": 65.22877167245854,
+      "rmse": 84.29740688035884
+    },
+    {
+      "site": "IAD|International A",
+      "rows": 355,
+      "mae": 65.06047987963976,
+      "rmse": 86.04562407966226
+    },
+    {
+      "site": "IAD|Satellite C",
+      "rows": 132,
+      "mae": 31.84380083234118,
+      "rmse": 41.26442741181162
+    },
+    {
+      "site": "IAH|IAB",
+      "rows": 320,
+      "mae": 94.87484229679498,
+      "rmse": 130.53315405273784
+    },
+    {
+      "site": "JFK|Terminal 1",
+      "rows": 279,
+      "mae": 133.79268643242045,
+      "rmse": 165.7317903714734
+    },
+    {
+      "site": "JFK|Terminal 4 (IAT)",
+      "rows": 410,
+      "mae": 112.58764263854827,
+      "rmse": 148.05316711103694
+    },
+    {
+      "site": "JFK|Terminal 5 (Jet Blue)",
+      "rows": 277,
+      "mae": 45.47603463700997,
+      "rmse": 58.03159015499381
+    },
+    {
+      "site": "JFK|Terminal 7 (British)",
+      "rows": 133,
+      "mae": 31.20297269900218,
+      "rmse": 46.90322270904669
+    },
+    {
+      "site": "JFK|Terminal 8 (American)",
+      "rows": 299,
+      "mae": 102.99616720636514,
+      "rmse": 134.02566104016307
+    },
+    {
+      "site": "LAS|Terminal 3",
+      "rows": 175,
+      "mae": 102.3333276208258,
+      "rmse": 142.94794207502903
+    },
+    {
+      "site": "MCO|Airside 4",
+      "rows": 125,
+      "mae": 76.12840910186722,
+      "rmse": 106.86224180215278
+    },
+    {
+      "site": "MCO|Terminal C",
+      "rows": 215,
+      "mae": 145.68692690985347,
+      "rmse": 198.82284853531644
+    },
+    {
+      "site": "MIA|Central Terminal",
+      "rows": 90,
+      "mae": 89.47064573323483,
+      "rmse": 115.53634870217016
+    },
+    {
+      "site": "MIA|North Terminal",
+      "rows": 316,
+      "mae": 139.84921209855236,
+      "rmse": 188.56147900607675
+    },
+    {
+      "site": "MIA|South Terminal",
+      "rows": 348,
+      "mae": 114.94586540825068,
+      "rmse": 155.65275107020832
+    },
+    {
+      "site": "MSP|Terminal 1 Lindbergh",
+      "rows": 147,
+      "mae": 36.23507605835912,
+      "rmse": 49.585596913035005
+    },
+    {
+      "site": "MSP|Terminal 2 Humphrey",
+      "rows": 19,
+      "mae": 13.016805087895067,
+      "rmse": 26.573660394032913
+    },
+    {
+      "site": "PDX|Main",
+      "rows": 72,
+      "mae": 14.428285544885853,
+      "rmse": 19.196933807765575
+    },
+    {
+      "site": "PHL|Terminal A",
+      "rows": 166,
+      "mae": 48.25819102011041,
+      "rmse": 63.12468516688846
+    },
+    {
+      "site": "PHX|Main",
+      "rows": 158,
+      "mae": 34.997418333833274,
+      "rmse": 49.09947014378694
+    },
+    {
+      "site": "SAN|Main",
+      "rows": 83,
+      "mae": 33.40765048232449,
+      "rmse": 44.76517924175964
+    },
+    {
+      "site": "SEA|South Satellite",
+      "rows": 262,
+      "mae": 103.53569512409507,
+      "rmse": 141.37377790102246
+    },
+    {
+      "site": "SFO|Terminal A",
+      "rows": 263,
+      "mae": 141.87653056170905,
+      "rmse": 178.52703271378974
+    },
+    {
+      "site": "SFO|Terminal G",
+      "rows": 274,
+      "mae": 98.11146422263187,
+      "rmse": 124.73586210087228
+    },
+    {
+      "site": "SLC|Main",
+      "rows": 97,
+      "mae": 31.10239596888836,
+      "rmse": 39.66761178023611
+    },
+    {
+      "site": "STL|Main",
+      "rows": 33,
+      "mae": 17.900710945694396,
+      "rmse": 25.234680170790323
+    }
+  ]
+}

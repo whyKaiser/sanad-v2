@@ -51,8 +51,9 @@ export function recordAnalytics(records: CaseRecord[], asOf: RecordedDate, visaT
 }
 // Every CSV cell is quoted, including cells containing a newline or a formula prefix.
 export function csvCell(value: string) { const safe = /^[\s]*[=+\-@]/.test(value) ? `'${value}` : value; return `"${safe.replaceAll('"', '""')}"`; }
-export function analyticsCsv(records: CaseRecord[], asOf: RecordedDate, visaType = "all") {
+export function analyticsCsv(records: CaseRecord[], asOf: RecordedDate, visaType = "all", followup: FollowupStatus | "all" = "all") {
   const data = recordAnalytics(records, asOf, visaType);
-  const rows = [["مرجع الحالة", "الاسم التجريبي", "نوع التأشيرة", "حالة السجل للمراجعة", "تاريخ الرصد", "التقويم"], ...data.rows.map(({ record, status }) => [record.reference, record.name, record.visaType, followupLabels[status], asOf.value, asOf.calendar === "hijri" ? "هجري" : "ميلادي"])];
+  const selected = data.rows.filter(row => followup === "all" || row.status === followup);
+  const rows = [["مرجع الحالة", "الاسم التجريبي", "نوع التأشيرة", "حالة السجل للمراجعة", "تاريخ الرصد", "التقويم"], ...selected.map(({ record, status }) => [record.reference, record.name, record.visaType, followupLabels[status], asOf.value, asOf.calendar === "hijri" ? "هجري" : "ميلادي"])];
   return "\uFEFF" + rows.map(row => row.map(csvCell).join(",")).join("\r\n");
 }

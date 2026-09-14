@@ -14,7 +14,7 @@
     "postbuild": "node scripts/check-build.mjs",
     "typecheck": "tsc --noEmit",
     "benchmark": "node scripts/benchmark.mjs",
-    "test": "node --import tsx --test tests/domain.test.ts tests/ocr.test.ts tests/groq.test.ts tests/traveler.test.ts tests/operations.test.ts tests/integrated.test.ts tests/journal-database.test.ts tests/permissions-ui.test.tsx",
+    "test": "node --import tsx --test tests/domain.test.ts tests/ocr.test.ts tests/groq.test.ts tests/traveler.test.ts tests/operations.test.ts tests/integrated.test.ts tests/journal-database.test.ts tests/permissions-ui.test.tsx tests/forecast.test.ts",
     "test:integration": "node scripts/test-integration.mjs",
     "db:migrate:local": "wrangler d1 migrations apply DB --local",
     "db:migrate:remote": "node scripts/guard-v2.mjs && wrangler d1 migrations apply DB --remote",

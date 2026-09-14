@@ -49,4 +49,6 @@ next-env.d.ts
 
 *.tsbuildinfo
 /*.traineddata
+/ml/.venv/
+/ml/__pycache__/
 
