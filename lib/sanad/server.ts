@@ -126,7 +126,7 @@ export async function handle(request:Request):Promise<Response>{
     const writes=request.method!=='GET'&&!['/api/assistant','/api/simulation'].includes(url.pathname);
     let reason='إنشاء سجل أو استكمال إجراء في النسخة التجريبية';
     if(request.headers.has('x-sanad-reason')){try{reason=decodeURIComponent(request.headers.get('x-sanad-reason')!);}catch{throw new GovernanceError(400,'سبب التعديل غير صالح.');}}
-    if(writes&&['PATCH','PUT'].includes(request.method)&&!request.headers.has('x-sanad-reason'))throw new GovernanceError(400,'دوّن سبب التعديل ليظهر في سجل يقين.');
+    if(writes&&['PATCH','PUT'].includes(request.method)&&!request.headers.has('x-sanad-reason'))throw new GovernanceError(400,'دوّن سبب التعديل ليظهر في سجل التغييرات.');
     if(reason.trim().length<8||reason.length>500)throw new GovernanceError(400,'سبب التعديل من 8 إلى 500 حرف.');
     const token=writes?await beginMutation(user,`${request.method} ${url.pathname}`,reason):null;
     try {
