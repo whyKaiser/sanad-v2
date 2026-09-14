@@ -2,13 +2,22 @@ import type {CaseRecord,StoredDocument} from '../lib/sanad/types';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { randomBytes } from 'node:crypto';
+import { randomBytes, pbkdf2Sync } from 'node:crypto';
 import { hashPassword, verifyPassword } from '../lib/sanad/password';
 import { base, request, sessionCookie } from './session';
 import { demoRecord } from '../lib/sanad/demo';
 test('Password verifier uses salt, rejects wrong passwords and malformed hashes',async()=>{
   const password='synthetic-test-password-for-unit';const hash=await hashPassword(password);
   assert.equal(await verifyPassword(password,hash),true);assert.equal(await verifyPassword('another-synthetic-password',hash),false);assert.equal(await verifyPassword(password,'bad-format'),false);assert.notEqual(await hashPassword(password),hash);
+});
+
+test('Explicitly provisioned demo credentials verify without weakening account enrollment',async()=>{
+  const sample='demo42',salt=randomBytes(32).toString('hex');
+  const hash=`pbkdf2-sha256:100000:${salt}:${pbkdf2Sync(sample,salt,100000,32,'sha256').toString('hex')}`;
+  assert.equal(await verifyPassword(sample,hash),true);
+  assert.equal(await verifyPassword('wrong6',hash),false);
+  assert.equal(await verifyPassword('',hash),false);
+  await assert.rejects(()=>hashPassword(sample),/16 and 200/);
 });
 test('Private routes reject former platform headers, old cookies and unauthenticated sessions',async()=>{
   assert.equal((await fetch(base+'/api/state',{headers:{cookie:'__sites_local_auth=1','oai-authenticated-user-id':'sanad:admin','oai-authenticated-user-email':'test@example.invalid'}})).status,401);
