@@ -16,7 +16,7 @@ export async function allowedAiEnv(owner:string){const config=await settings(own
 export async function authorize(user:User,request:Request){
  const path=new URL(request.url).pathname;const method=request.method;let denied=false;
  if(path.startsWith("/api/security")||path.startsWith("/api/users"))denied=user.role!=="admin";
- if(method!=="GET"&&user.role==="viewer"&&!['/api/assistant','/api/simulation'].includes(path))denied=true;
+ if(method!=="GET"&&user.role==="viewer"&&!['/api/assistant','/api/simulation','/api/forecast','/api/forecast/csv','/api/forecast/simulation'].includes(path))denied=true;
  if(method!=="GET"&&user.role==="officer"){
   if(/^\/api\/packet\/[^/]+$/.test(path)||/\/directives\/[^/]+\/prepare$/.test(path)||/\/intake\/[^/]+\/(review|dispatch)$/.test(path))denied=true;
   if(/^\/api\/documents\/[^/]+$/.test(path)&&method==="PATCH"){const input=await request.clone().json() as {reviewStatus?:string};if(input.reviewStatus==="approved")denied=true;}
