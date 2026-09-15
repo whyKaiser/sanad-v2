@@ -122,7 +122,7 @@ export async function handle(request:Request):Promise<Response>{
   try {
     const url=new URL(request.url);
     if(url.pathname.startsWith('/api/auth/'))return handleAuth(request);
-    const user=await getCurrentUser(request);if(!user)return json({error:"سجل الدخول للوصول إلى سَنَد ٢."},401);
+    const user=await getCurrentUser(request);if(!user)return json({error:"سجل الدخول للوصول إلى سَنَد."},401);
     if(request.method!=='GET'&&(request.headers.get('origin')!==url.origin||request.headers.get('sec-fetch-site')==='cross-site'))return json({error:"مصدر الطلب غير مسموح."},403);
     await authorize(user,request);
     const writes=request.method!=='GET'&&!['/api/assistant','/api/simulation','/api/forecast','/api/forecast/csv','/api/forecast/simulation'].includes(url.pathname);

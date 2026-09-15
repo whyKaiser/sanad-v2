@@ -10,7 +10,7 @@ const entities:Record<string,{id:string;data:string}>={
  workflow_cases:{id:"case_id",data:"data"},operational_decisions:{id:"id",data:"data"},workspace_settings:{id:"owner",data:"data"},
  staff_users:{id:"id",data:"json_object('username',username,'displayName',display_name,'role',role,'active',active,'revision',revision)"},packet_reviews:{id:"id",data:"snapshot"},
 };
-export function database(){if(!env.DB)throw new GovernanceError(503,"قاعدة بيانات النسخة الثانية غير متاحة.");return env.DB;}
+export function database(){if(!env.DB)throw new GovernanceError(503,"قاعدة بيانات سَنَد غير متاحة.");return env.DB;}
 function secret(){if(!env.SANAD_AUDIT_KEY||env.SANAD_AUDIT_KEY.length<32)throw new GovernanceError(503,"مفتاح حماية سجل التعديلات غير مجهز.");return env.SANAD_AUDIT_KEY;}
 function payload(row:JournalRow){const {previous,signature,...rest}=row;return rest;}
 async function journal(owner:string){return (await database().prepare("SELECT j.*,s.previous,s.signature FROM change_journal j LEFT JOIN journal_signatures s ON s.event_id=j.id WHERE j.owner=? ORDER BY j.id").bind(owner).all<JournalRow>()).results;}

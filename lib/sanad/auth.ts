@@ -21,8 +21,8 @@ export async function bootstrap(){
   return;
  }
  const username=env.SANAD_USERNAME.toLowerCase();const owner=`sanad-v2:${username}`;
- const user:User={userId:crypto.randomUUID(),owner,username,displayName:env.SANAD_DISPLAY_NAME||"مسؤول سَنَد ٢",role:"admin"};
- const token=await beginMutation(user,"bootstrap","تهيئة حساب مسؤول النسخة الثانية");
+ const user:User={userId:crypto.randomUUID(),owner,username,displayName:env.SANAD_DISPLAY_NAME||"مسؤول سَنَد",role:"admin"};
+ const token=await beginMutation(user,"bootstrap","تهيئة حساب مسؤول سَنَد");
  try{await db.prepare("INSERT INTO staff_users(id,owner,username,display_name,password_hash,role,auth_version,created_at) VALUES (?,?,?,?,?,'admin',?,?)").bind(user.userId,owner,username,user.displayName,env.SANAD_PASSWORD_HASH,randomToken(),new Date().toISOString()).run();}
  finally{await finishMutation(owner,token);}
 }
@@ -45,7 +45,7 @@ export async function handleAuth(request:Request):Promise<Response>{
    return json({ok:true},200,{"Set-Cookie":`${sessionCookie}=; ${cookieAttributes}; Max-Age=0`});
   }
   if(url.pathname!=="/api/auth/login")return json({error:"المسار غير موجود."},404);
-  if(!env.SANAD_USERNAME||!env.SANAD_PASSWORD_HASH)return json({error:"حساب سَنَد ٢ لم يُجهز بعد."},503);
+  if(!env.SANAD_USERNAME||!env.SANAD_PASSWORD_HASH)return json({error:"حساب سَنَد لم يُجهز بعد."},503);
   const raw=await request.text();if(raw.length>4096)return json({error:"بيانات الدخول غير صحيحة."},400);
   const input=z.object({username:z.string().trim().min(1).max(80),password:z.string().min(1).max(200)}).strict().parse(JSON.parse(raw));
   const now=Date.now();const window=Math.floor(now/300_000);const ip=request.headers.get("cf-connecting-ip")||"local";
@@ -63,7 +63,7 @@ export async function handleAuth(request:Request):Promise<Response>{
    env.DB.prepare("DELETE FROM auth_sessions WHERE expires_at<=?").bind(now),env.DB.prepare("DELETE FROM auth_attempts WHERE expires_at<=?").bind(now),
    env.DB.prepare("INSERT INTO auth_sessions(token_hash,owner,username,auth_version,expires_at) VALUES (?,?,?,?,?)").bind(await sha256(token),row.owner,row.username,row.auth_version,now+lifetime*1000),
   ]);
-  await securityEvent(row.owner,row.id,"login_success","دخول موظف إلى النسخة الثانية");
+  await securityEvent(row.owner,row.id,"login_success","دخول موظف إلى سَنَد");
   return json({ok:true,user:publicUser(row)},200,{"Set-Cookie":`${sessionCookie}=${token}; ${cookieAttributes}; Max-Age=${lifetime}`});
  }catch(error){if(error instanceof z.ZodError||error instanceof SyntaxError)return json({error:"بيانات الدخول غير صحيحة."},400);console.error("sanad_v2_login_failed",error instanceof Error?error.name:"unknown");return json({error:"تعذر تسجيل الدخول الآن. حاول مجددًا."},503);}
 }

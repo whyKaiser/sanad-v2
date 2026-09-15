@@ -3,7 +3,7 @@ import "./globals.css";
 import "./integrated.css";
 
 export const metadata: Metadata = {
-  title: "سَنَد ٢ | الوثيقة والثقة والقرار",
+  title: "سَنَد | الوثيقة والثقة والقرار",
   description: "حفظ وثائق السفر واسترجاعها ومراجعتها بمساعدة ذكية مرتبطة بالمصادر. نموذج تجريبي ببيانات اصطناعية.",
   icons: {
     icon: "/favicon.svg",
