@@ -13,6 +13,7 @@ test('Integrated v2: role boundaries, immutable approval, audit, simulations, an
  const accounts=JSON.parse(readFileSync('work/team-private.json','utf8')) as {username:string;password:string;role:string}[];
  const officer=accounts.find(a=>a.role==='officer')!;const reviewer=accounts.find(a=>a.role==='reviewer')!;const viewer=accounts.find(a=>a.role==='viewer')!;
  const oc=await login(officer.username,officer.password),rc=await login(reviewer.username,reviewer.password),vc=await login(viewer.username,viewer.password);
+ assert.equal((await request('/api/users','POST',{username:'short-pass-officer',displayName:'موظف اختبار',role:'officer',password:'viewer123'})).status,400);
  for(const path of ['/api/security','/api/users'])assert.equal((await as(oc,path)).status,403);
  assert.equal((await as(vc,'/api/cases','POST',{})).status,403);
  assert.equal((await as(oc,'/api/decisions','POST',{})).status,403);
@@ -41,8 +42,9 @@ test('Integrated v2: role boundaries, immutable approval, audit, simulations, an
  assert.equal((await as(rc,'/api/decisions','POST',{inputs,decision:'approved',reason:'اعتماد خطة افتراضية لزيادة سعة المراجعة'})).status,201);
  const security=await(await request('/api/security')).json() as {settings:{externalAi:boolean};events:{kind:string}[]};assert.equal(security.settings.externalAi,false);assert.ok(security.events.some((e)=>e.kind==='permission_denied'));
  const members=await(await request('/api/users')).json() as {id:string;username:string;revision:number}[];const target=members.find(u=>u.username===viewer.username);assert.ok(target);
- assert.equal((await request(`/api/users/${target.id}`,'PATCH',{role:'viewer',active:true,revoke:true,revision:target.revision})).status,200);
+ const rotated=await request(`/api/users/${target.id}`,'PATCH',{role:'viewer',active:true,revoke:true,revision:target.revision,password:'viewer123'});assert.equal(rotated.status,200,await rotated.clone().text());
  assert.equal((await as(vc,'/api/state')).status,401,'Revoked session immediately stops working');
+ const freshViewer=await login(viewer.username,'viewer123');assert.equal((await as(freshViewer,'/api/cases','POST',{})).status,403,'Viewer password change preserves read-only role');
  current=await(await request(`/api/cases/${record.id}`)).json();workflow=await(await request(`/api/workflow/${record.id}`)).json();assert.equal((await markReady()).status,200);
  const final=await(await request('/api/journal')).json() as Journal;assert.equal(final.integrity.valid,true);assert.equal(final.integrity.total,final.integrity.signed);
 });

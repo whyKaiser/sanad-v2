@@ -3,8 +3,8 @@ const iterations = 100_000;
 export function hex(bytes: ArrayBuffer | Uint8Array) { return [...new Uint8Array(bytes)].map(value=>value.toString(16).padStart(2,"0")).join(""); }
 export async function sha256(value: string) { return hex(await crypto.subtle.digest("SHA-256", encoder.encode(value))); }
 export function randomToken() { return hex(crypto.getRandomValues(new Uint8Array(32))); }
-export async function hashPassword(password: string, salt = randomToken()) {
-  if(password.length < 16 || password.length > 200) throw new Error("Use a password between 16 and 200 characters.");
+export async function hashPassword(password: string, salt = randomToken(), minimumLength = 16) {
+  if(password.length < minimumLength || password.length > 200) throw new Error(`Use a password between ${minimumLength} and 200 characters.`);
   return derivePassword(password,salt);
 }
 async function derivePassword(password:string,salt:string){

@@ -74,14 +74,17 @@ export async function governanceHandle(request:Request,user:User,getCase:(id:str
  if(path[0]==="users"&&method==="GET")return json((await db.prepare("SELECT id,username,display_name AS displayName,role,active,revision,created_at AS createdAt FROM staff_users WHERE owner=? ORDER BY created_at").bind(owner).all()).results);
  if(path[0]==="users"&&!path[1]&&method==="POST"){
   const input=userCreateSchema.parse(await body(request));
+  if(input.role!=="viewer"&&input.password.length<16)throw new GovernanceError(400,"كلمة مرور حسابات الموظفين لا تقل عن 16 حرفًا.");
   if(await db.prepare("SELECT id FROM staff_users WHERE username=?").bind(input.username).first())throw new GovernanceError(409,"اسم المستخدم غير متاح.");
   const count=await db.prepare("SELECT COUNT(*) AS count FROM staff_users WHERE owner=?").bind(owner).first<{count:number}>();if((count?.count||0)>=25)throw new GovernanceError(400,"حد النسخة التجريبية 25 حسابًا.");
-  const id=crypto.randomUUID();await db.prepare("INSERT INTO staff_users(id,owner,username,display_name,password_hash,role,auth_version,created_at) VALUES (?,?,?,?,?,?,?,?)").bind(id,owner,input.username,input.displayName,await hashPassword(input.password),input.role,randomToken(),new Date().toISOString()).run();return json({id},201);
+  const id=crypto.randomUUID();await db.prepare("INSERT INTO staff_users(id,owner,username,display_name,password_hash,role,auth_version,created_at) VALUES (?,?,?,?,?,?,?,?)").bind(id,owner,input.username,input.displayName,await hashPassword(input.password,undefined,input.role==="viewer"?8:16),input.role,randomToken(),new Date().toISOString()).run();return json({id},201);
  }
  if(path[0]==="users"&&path[1]&&method==="PATCH"){
   const input=userUpdateSchema.parse(await body(request));const row=await db.prepare("SELECT * FROM staff_users WHERE id=? AND owner=?").bind(path[1],owner).first<StaffRow>();if(!row)throw new GovernanceError(404,"الحساب غير متاح.");
+  if(input.password&&(row.role!=="viewer"||input.role!=="viewer"))throw new GovernanceError(400,"تغيير كلمة المرور المختصرة متاح لحساب العرض للقراءة فقط.");
   if(row.id===user.userId&&(!input.active||input.role!=="admin"))throw new GovernanceError(400,"لا يمكنك تعطيل حسابك الإداري أو خفض صلاحيته بنفسك.");
-  const result=await db.prepare("UPDATE staff_users SET role=?,active=?,revision=revision+1,auth_version=? WHERE id=? AND owner=? AND revision=?").bind(input.role,input.active?1:0,(input.revoke||input.role!==row.role||!input.active)?randomToken():row.auth_version,row.id,owner,input.revision).run();
+  const passwordHash=input.password?await hashPassword(input.password,undefined,8):row.password_hash;
+  const result=await db.prepare("UPDATE staff_users SET role=?,active=?,password_hash=?,revision=revision+1,auth_version=? WHERE id=? AND owner=? AND revision=?").bind(input.role,input.active?1:0,passwordHash,(input.revoke||input.role!==row.role||!input.active||!!input.password)?randomToken():row.auth_version,row.id,owner,input.revision).run();
   if(!result.meta.changes)throw new GovernanceError(409,"تغير الحساب أثناء التعديل؛ حدّث الشاشة.");return json({ok:true});
  }
  return null;

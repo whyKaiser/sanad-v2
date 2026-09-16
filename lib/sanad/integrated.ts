@@ -55,5 +55,5 @@ export function simulate(workflows:Workflow[],raw:unknown){
   };
   return {input,internal,external,missing,baseline:forecast(input.reviewers),proposed:forecast(input.reviewers+input.additional),kind:"capacity_simulation" as const,assumption:"محاكاة حسابية بافتراض وصول منتظم ومتوسط معالجة ثابت؛ ليست توقعًا مدربًا على بيانات حكومية.",recommendation:input.additional>0?"راجع توزيع موظفي المراجعة وفق السعة المعروضة. الانتظار الخارجي ونقص الوثائق يحتاجان إجراءً مستقلًا.":"جرّب إضافة مراجع للمقارنة، ثم اعتمد أي تغيير تشغيلي بشريًا."};
 }
-export const userCreateSchema=z.object({username:z.string().trim().regex(/^[a-z0-9_.-]{3,40}$/),displayName:z.string().trim().min(2).max(80),role:z.enum(roles),password:z.string().min(16).max(200)}).strict();
-export const userUpdateSchema=z.object({role:z.enum(roles),active:z.boolean(),revoke:z.boolean(),revision:z.number().int().positive()}).strict();
+export const userCreateSchema=z.object({username:z.string().trim().regex(/^[a-z0-9_.-]{3,40}$/),displayName:z.string().trim().min(2).max(80),role:z.enum(roles),password:z.string().min(8).max(200)}).strict();
+export const userUpdateSchema=z.object({role:z.enum(roles),active:z.boolean(),revoke:z.boolean(),revision:z.number().int().positive(),password:z.string().min(8).max(200).optional()}).strict();
