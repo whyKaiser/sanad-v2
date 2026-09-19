@@ -10,55 +10,55 @@
 
 :root{
   /* ---- brand ramp (grown from the original #10756b) ---------------------- */
-  --brand-50:#e6f4ef;
-  --brand-100:#c9e7dc;
+  --brand-50:#ddf0e8;
+  --brand-100:#b8e0d0;
   --brand-200:#addbce;
   --brand-300:#7cc4b2;
   --brand-400:#46a794;
-  --brand-500:#0e6f64;
-  --brand-600:#0b5b53;
-  --brand-700:#0b4e48;
+  --brand-500:#0c6459;
+  --brand-600:#0a5148;
+  --brand-700:#08443d;
   --brand-800:#093d39;
   --brand-900:#072e2b;
 
   /* ---- neutral ramp (cool, matches the original #1b2d3b foreground) ------ */
   --ink-0:#ffffff;
-  --ink-50:#f6f8fa;
-  --ink-100:#eaf0f4;
-  --ink-200:#ccd8e0;
-  --ink-300:#adbecb;
-  --ink-400:#8b9dab;
-  --ink-500:#5f727e;
-  --ink-600:#4a5c68;
-  --ink-700:#354753;
-  --ink-800:#2a3742;
-  --ink-900:#152634;
+  --ink-50:#f1f5f8;
+  --ink-100:#e6edf2;
+  --ink-200:#b9c8d3;
+  --ink-300:#9cb0bf;
+  --ink-400:#768b9a;
+  --ink-500:#4a5c68;
+  --ink-600:#3c4d58;
+  --ink-700:#2e404b;
+  --ink-800:#222f39;
+  --ink-900:#101f2c;
   --ink-950:#132333;
 
   /* ---- status ----------------------------------------------------------- */
-  --warn-50:#faeed3;
+  --warn-50:#f7e7c3;
   --warn-100:#efdcab;
-  --warn-500:#b5871f;
-  --warn-700:#8a6514;
-  --danger-50:#fbe4e2;
+  --warn-500:#9c7217;
+  --warn-700:#70520f;
+  --danger-50:#f9dad7;
   --danger-100:#f3cbc8;
-  --danger-500:#b94747;
-  --danger-700:#8f3535;
+  --danger-500:#a83a3a;
+  --danger-700:#782b2b;
   --info-50:#e5eef7;
   --info-100:#cddff0;
-  --info-500:#3f6e96;
-  --info-700:#2f5472;
+  --info-500:#345d81;
+  --info-700:#26455f;
   --good-50:#dcf1e7;
   --good-100:#bde5d2;
-  --good-500:#1d8a63;
-  --good-700:#15694b;
+  --good-500:#177552;
+  --good-700:#105740;
 
   /* ---- semantic surfaces ------------------------------------------------ */
-  --bg:#e9eff3;
+  --bg:#dde5ec;
   --surface:var(--ink-0);
   --surface-2:var(--ink-100);
   --surface-3:var(--ink-200);
-  --surface-inset:#f1f5f8;
+  --surface-inset:#eef3f7;
   --line:var(--ink-200);
   --line-strong:var(--ink-300);
   --text:var(--ink-900);
@@ -132,10 +132,10 @@
   --r-pill:999px;
 
   /* ---- elevation: layered and soft, never a single flat blur ------------- */
-  --elev-1:0 1px 2px rgba(15,32,46,.07), 0 1px 3px rgba(15,32,46,.06);
-  --elev-2:0 1px 2px rgba(15,32,46,.07), 0 6px 16px rgba(15,32,46,.10);
-  --elev-3:0 2px 4px rgba(15,32,46,.08), 0 14px 32px rgba(15,32,46,.14);
-  --elev-4:0 4px 8px rgba(19,35,51,.07), 0 28px 60px rgba(19,35,51,.16);
+  --elev-1:0 1px 2px rgba(12,28,41,.10), 0 1px 3px rgba(12,28,41,.08);
+  --elev-2:0 1px 2px rgba(12,28,41,.10), 0 6px 16px rgba(12,28,41,.14);
+  --elev-3:0 2px 4px rgba(12,28,41,.11), 0 14px 32px rgba(12,28,41,.19);
+  --elev-4:0 4px 8px rgba(12,28,41,.12), 0 28px 60px rgba(12,28,41,.24);
   --ring-focus:0 0 0 3px color-mix(in srgb,var(--brand) 32%,transparent);
 
   /* ---- motion ------------------------------------------------------------ */
@@ -191,16 +191,16 @@
    ========================================================================== */
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
-    --bg:#0a1620;
-    --surface:#10202c;
-    --surface-2:#162a38;
-    --surface-3:#1d3543;
+    --bg:#071119;
+    --surface:#0f1f2b;
+    --surface-2:#173040;
+    --surface-3:#1f3c4d;
     --surface-inset:#0d1c27;
-    --line:#223948;
-    --line-strong:#2e4959;
-    --text:#e7eef3;
-    --text-2:#b8c8d3;
-    --text-3:#8ba0ae;
+    --line:#2c4557;
+    --line-strong:#3a5a6f;
+    --text:#eef5f9;
+    --text-2:#c3d3de;
+    --text-3:#9db0bd;
     --brand:var(--brand-300);
     --brand-soft:#0f302c;
     --brand-ink:var(--brand-200);
@@ -242,16 +242,16 @@
 
 /* explicit choice wins over the OS in both directions */
 :root[data-theme="dark"]{
-  --bg:#0a1620;
-  --surface:#10202c;
-  --surface-2:#162a38;
-  --surface-3:#1d3543;
+  --bg:#071119;
+  --surface:#0f1f2b;
+  --surface-2:#173040;
+  --surface-3:#1f3c4d;
   --surface-inset:#0d1c27;
-  --line:#223948;
-  --line-strong:#2e4959;
-  --text:#e7eef3;
-  --text-2:#b8c8d3;
-  --text-3:#8ba0ae;
+  --line:#2c4557;
+  --line-strong:#3a5a6f;
+  --text:#eef5f9;
+  --text-2:#c3d3de;
+  --text-3:#9db0bd;
   --brand:var(--brand-300);
   --brand-soft:#0f302c;
   --brand-ink:var(--brand-200);
