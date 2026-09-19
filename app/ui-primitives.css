@@ -1,0 +1,150 @@
+/* ==========================================================================
+   سَنَد ٢ — Primitive styles
+   Styles for components/ui/surface.tsx. Everything here is built from tokens,
+   uses logical properties so RTL needs no mirrored rules, and sizes itself with
+   container queries rather than page-width breakpoints.
+   ========================================================================== */
+
+/* ---- page header --------------------------------------------------------- */
+.page-header{
+  display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;
+  gap:var(--space-4);
+  padding-block-end:var(--space-5);
+  border-block-end:1px solid var(--line);
+  margin-block-end:var(--space-6);
+}
+.page-header-copy{display:flex;flex-direction:column;gap:var(--space-2);min-width:0}
+.page-eyebrow{
+  font-size:var(--text-xs);letter-spacing:var(--tracking-label);
+  color:var(--brand-ink);font-weight:var(--weight-semibold);
+}
+.page-title{font-size:var(--text-2xl);margin:0;color:var(--text)}
+.page-description{margin:0;font-size:var(--text-sm);color:var(--text-3);max-width:68ch;line-height:var(--leading-normal)}
+.page-header-actions{display:flex;flex-wrap:wrap;gap:var(--space-2)}
+
+/* ---- section ------------------------------------------------------------- */
+.section{display:flex;flex-direction:column;gap:var(--space-4);margin-block-end:var(--space-7)}
+.section-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:var(--space-3)}
+.section-head-copy{display:flex;flex-direction:column;gap:var(--space-1);min-width:0}
+.section-title{font-size:var(--text-lg);margin:0}
+.section-description{margin:0;font-size:var(--text-sm);color:var(--text-3)}
+.section-actions{display:flex;flex-wrap:wrap;gap:var(--space-2)}
+.section-body{display:flex;flex-direction:column;gap:var(--space-4);min-width:0}
+
+/* ---- panel --------------------------------------------------------------- */
+.panel{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:var(--r-lg);
+  padding:var(--space-5);
+  box-shadow:var(--elev-1);
+  container-type:inline-size;
+  min-width:0;
+}
+.panel[data-tone="brand"]{border-color:color-mix(in srgb,var(--brand) 26%,var(--line));background:var(--brand-soft)}
+.panel[data-tone="warn"]{border-color:color-mix(in srgb,var(--warn-500) 30%,var(--line));background:var(--warn-50)}
+.panel[data-tone="danger"]{border-color:color-mix(in srgb,var(--danger-500) 30%,var(--line));background:var(--danger-50)}
+.panel[data-tone="good"]{border-color:color-mix(in srgb,var(--good-500) 30%,var(--line));background:var(--good-50)}
+.panel[data-tone="info"]{border-color:color-mix(in srgb,var(--info-500) 30%,var(--line));background:var(--info-50)}
+
+/* ---- stat tile ----------------------------------------------------------- */
+.stat-grid{
+  display:grid;gap:var(--space-4);
+  grid-template-columns:repeat(auto-fit,minmax(min(210px,100%),1fr));
+}
+.stat-tile{
+  display:flex;flex-direction:column;gap:var(--space-2);
+  padding:var(--space-5);
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:var(--r-lg);
+  box-shadow:var(--elev-1);
+  text-align:start;
+  font:inherit;
+  color:inherit;
+  cursor:default;
+  min-width:0;
+}
+button.stat-tile{cursor:pointer}
+.stat-tile-head{display:flex;align-items:center;gap:var(--space-2);color:var(--text-3)}
+.stat-tile-icon{
+  display:grid;place-items:center;inline-size:34px;block-size:34px;flex:none;
+  border-radius:var(--r-sm);background:var(--surface-2);color:var(--text-2);
+}
+.stat-tile-label{font-size:var(--text-sm);line-height:var(--leading-snug)}
+.stat-tile-value{font-size:var(--text-2xl);font-weight:var(--weight-semibold);line-height:1.1;color:var(--text)}
+.stat-tile-hint{font-size:var(--text-xs);color:var(--text-3)}
+.stat-tile[data-tone="brand"] .stat-tile-icon{background:var(--brand-soft);color:var(--brand-ink)}
+.stat-tile[data-tone="warn"] .stat-tile-icon{background:var(--warn-50);color:var(--warn-700)}
+.stat-tile[data-tone="danger"] .stat-tile-icon{background:var(--danger-50);color:var(--danger-700)}
+.stat-tile[data-tone="good"] .stat-tile-icon{background:var(--good-50);color:var(--good-700)}
+.stat-tile[data-tone="info"] .stat-tile-icon{background:var(--info-50);color:var(--info-700)}
+
+/* ---- pill ---------------------------------------------------------------- */
+.pill{
+  display:inline-flex;align-items:center;gap:var(--space-1);
+  padding:4px 10px;border-radius:var(--r-pill);
+  font-size:var(--text-xs);font-weight:var(--weight-medium);line-height:1.6;
+  background:var(--surface-2);color:var(--text-2);
+  border:1px solid transparent;
+  white-space:nowrap;
+}
+.pill[data-tone="brand"]{background:var(--brand-soft);color:var(--brand-ink);border-color:color-mix(in srgb,var(--brand) 22%,transparent)}
+.pill[data-tone="good"]{background:var(--good-50);color:var(--good-700);border-color:color-mix(in srgb,var(--good-500) 24%,transparent)}
+.pill[data-tone="warn"]{background:var(--warn-50);color:var(--warn-700);border-color:color-mix(in srgb,var(--warn-500) 26%,transparent)}
+.pill[data-tone="danger"]{background:var(--danger-50);color:var(--danger-700);border-color:color-mix(in srgb,var(--danger-500) 26%,transparent)}
+.pill[data-tone="info"]{background:var(--info-50);color:var(--info-700);border-color:color-mix(in srgb,var(--info-500) 24%,transparent)}
+
+/* ---- empty state --------------------------------------------------------- */
+.empty-state{
+  display:flex;flex-direction:column;align-items:center;gap:var(--space-3);
+  padding:var(--space-9) var(--space-5);
+  text-align:center;
+  border:1px dashed var(--line-strong);
+  border-radius:var(--r-lg);
+  background:var(--surface-inset);
+}
+.empty-state-icon{display:grid;place-items:center;inline-size:52px;block-size:52px;border-radius:var(--r-pill);background:var(--surface-2);color:var(--text-3)}
+.empty-state-title{margin:0;font-size:var(--text-md);font-weight:var(--weight-semibold)}
+.empty-state-description{margin:0;font-size:var(--text-sm);color:var(--text-3);max-width:52ch;line-height:var(--leading-normal)}
+
+/* ---- toolbar ------------------------------------------------------------- */
+.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:var(--space-2)}
+.toolbar[data-align="between"]{justify-content:space-between}
+.toolbar[data-align="end"]{justify-content:flex-end}
+
+/* ---- table scroll -------------------------------------------------------- */
+.table-scroll{
+  position:relative;
+  overflow-x:auto;
+  overscroll-behavior-x:contain;
+  border-radius:var(--r-md);
+  scrollbar-width:thin;
+}
+.table-scroll:focus-visible{box-shadow:var(--ring-focus)}
+
+/* ---- key / value --------------------------------------------------------- */
+.kv{display:grid;grid-template-columns:minmax(120px,auto) 1fr;gap:var(--space-2) var(--space-4);align-items:baseline;padding-block:var(--space-2);border-block-end:1px solid var(--line)}
+.kv:last-child{border-block-end:0}
+.kv-label{font-size:var(--text-sm);color:var(--text-3)}
+.kv-value{font-size:var(--text-sm);color:var(--text);min-width:0;overflow-wrap:anywhere}
+@container (max-width:420px){
+  .kv{grid-template-columns:1fr;gap:var(--space-1)}
+}
+
+/* ---- skeleton group ------------------------------------------------------ */
+.skeleton-group{display:flex;flex-direction:column;gap:var(--space-2)}
+
+/* ==========================================================================
+   Responsive guarantees that apply to the whole app
+   ========================================================================== */
+@media (max-width:640px){
+  .page-header{align-items:flex-start}
+  .page-header-actions{inline-size:100%}
+  .page-header-actions > *{flex:1 1 auto}
+  .stat-grid{grid-template-columns:1fr 1fr}
+}
+@media (max-width:420px){
+  .stat-grid{grid-template-columns:1fr}
+  .panel{padding:var(--space-4)}
+}

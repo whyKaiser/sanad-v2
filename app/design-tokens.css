@@ -1,0 +1,340 @@
+/* ==========================================================================
+   سَنَد ٢ — Design tokens
+   One source of truth for colour, type, space, elevation and motion.
+
+   The app shipped with 437 hard-coded hex values and 260 fixed px font sizes;
+   everything below exists so a screen never has to invent a value again. The
+   shadcn variable names are kept and re-pointed at these tokens, so existing
+   components keep working while the palette becomes themeable.
+   ========================================================================== */
+
+:root{
+  /* ---- brand ramp (grown from the original #10756b) ---------------------- */
+  --brand-50:#ddf0e8;
+  --brand-100:#b8e0d0;
+  --brand-200:#addbce;
+  --brand-300:#7cc4b2;
+  --brand-400:#46a794;
+  --brand-500:#0c6459;
+  --brand-600:#0a5148;
+  --brand-700:#08443d;
+  --brand-800:#093d39;
+  --brand-900:#072e2b;
+
+  /* ---- neutral ramp (cool, matches the original #1b2d3b foreground) ------ */
+  --ink-0:#ffffff;
+  --ink-50:#f1f5f8;
+  --ink-100:#e6edf2;
+  --ink-200:#b9c8d3;
+  --ink-300:#9cb0bf;
+  --ink-400:#768b9a;
+  --ink-500:#4a5c68;
+  --ink-600:#3c4d58;
+  --ink-700:#2e404b;
+  --ink-800:#222f39;
+  --ink-900:#101f2c;
+  --ink-950:#132333;
+
+  /* ---- status ----------------------------------------------------------- */
+  --warn-50:#f7e7c3;
+  --warn-100:#efdcab;
+  --warn-500:#9c7217;
+  --warn-700:#70520f;
+  --danger-50:#f9dad7;
+  --danger-100:#f3cbc8;
+  --danger-500:#a83a3a;
+  --danger-700:#782b2b;
+  --info-50:#e5eef7;
+  --info-100:#cddff0;
+  --info-500:#345d81;
+  --info-700:#26455f;
+  --good-50:#dcf1e7;
+  --good-100:#bde5d2;
+  --good-500:#177552;
+  --good-700:#105740;
+
+  /* ---- semantic surfaces ------------------------------------------------ */
+  --bg:#dde5ec;
+  --surface:var(--ink-0);
+  --surface-2:var(--ink-100);
+  --surface-3:var(--ink-200);
+  --surface-inset:#eef3f7;
+  --line:var(--ink-200);
+  --line-strong:var(--ink-300);
+  --text:var(--ink-900);
+  --text-2:var(--ink-700);
+  --text-3:var(--ink-500);
+  --text-on-brand:#ffffff;
+  --brand:var(--brand-500);
+  --brand-soft:var(--brand-50);
+  --brand-ink:var(--brand-700);
+
+  /* dark navigation rail, kept as its own scale so it survives theme flips */
+  --rail:var(--ink-950);
+  --rail-2:#1c3043;
+  --rail-line:#293c4b;
+  --rail-text:#d8e4eb;
+  --rail-text-2:#93a7b5;
+  --rail-active:#233a49;
+  --rail-accent:#a9ddcc;
+
+  /* ---- type ------------------------------------------------------------- */
+  --font-ar:"IBM Plex Sans Arabic",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,"Cascadia Mono",monospace;
+
+  /* fluid scale: comfortable on a phone, generous on a desk */
+  --text-2xs:clamp(11px,.62rem + .15vw,12px);
+  --text-xs:clamp(12px,.68rem + .18vw,13px);
+  --text-sm:clamp(13px,.74rem + .22vw,14px);
+  --text-base:clamp(14px,.8rem + .28vw,15.5px);
+  --text-md:clamp(15px,.85rem + .35vw,17px);
+  --text-lg:clamp(17px,.95rem + .5vw,20px);
+  --text-xl:clamp(20px,1.05rem + .8vw,25px);
+  --text-2xl:clamp(24px,1.2rem + 1.3vw,33px);
+  --text-3xl:clamp(29px,1.35rem + 2.1vw,44px);
+  --text-4xl:clamp(34px,1.5rem + 3vw,58px);
+
+  /* Arabic needs more leading than Latin at the same size */
+  --leading-tight:1.32;
+  --leading-snug:1.5;
+  --leading-normal:1.75;
+  --leading-loose:1.95;
+  --tracking-label:.12em;
+
+  --weight-regular:400;
+  --weight-medium:500;
+  --weight-semibold:600;
+  --weight-bold:700;
+
+  /* ---- space (4px base) -------------------------------------------------- */
+  --space-0:0;
+  --space-1:4px;
+  --space-2:8px;
+  --space-3:12px;
+  --space-4:16px;
+  --space-5:20px;
+  --space-6:24px;
+  --space-7:32px;
+  --space-8:40px;
+  --space-9:48px;
+  --space-10:64px;
+  --space-11:80px;
+  --space-12:96px;
+  --gutter:clamp(16px,3.5vw,36px);
+
+  /* ---- radius ------------------------------------------------------------ */
+  --radius:.65rem;                 /* kept: shadcn components read this */
+  --r-xs:6px;
+  --r-sm:9px;
+  --r-md:12px;
+  --r-lg:16px;
+  --r-xl:22px;
+  --r-pill:999px;
+
+  /* ---- elevation: layered and soft, never a single flat blur ------------- */
+  --elev-1:0 1px 2px rgba(12,28,41,.10), 0 1px 3px rgba(12,28,41,.08);
+  --elev-2:0 1px 2px rgba(12,28,41,.10), 0 6px 16px rgba(12,28,41,.14);
+  --elev-3:0 2px 4px rgba(12,28,41,.11), 0 14px 32px rgba(12,28,41,.19);
+  --elev-4:0 4px 8px rgba(12,28,41,.12), 0 28px 60px rgba(12,28,41,.24);
+  --ring-focus:0 0 0 3px color-mix(in srgb,var(--brand) 32%,transparent);
+
+  /* ---- motion ------------------------------------------------------------ */
+  --dur-1:120ms;
+  --dur-2:200ms;
+  --dur-3:320ms;
+  --dur-4:520ms;
+  --dur-5:820ms;
+  --ease-out:cubic-bezier(.22,.7,.2,1);
+  --ease-in-out:cubic-bezier(.65,.02,.32,1);
+  --ease-spring:cubic-bezier(.22,1.15,.36,1);
+  --stagger:70ms;
+
+  /* ---- shadcn compatibility: same names, now fed by the tokens ----------- */
+  --background:var(--surface);
+  --foreground:var(--text);
+  --card:var(--surface);
+  --card-foreground:var(--text);
+  --popover:var(--surface);
+  --popover-foreground:var(--text);
+  --primary:var(--brand);
+  --primary-foreground:var(--text-on-brand);
+  --secondary:var(--brand-50);
+  --secondary-foreground:var(--brand-700);
+  --muted:var(--surface-2);
+  --muted-foreground:var(--text-3);
+  --accent:var(--brand-50);
+  --accent-foreground:var(--brand-600);
+  --destructive:var(--danger-500);
+  --border:var(--line);
+  --input:var(--line-strong);
+  --ring:var(--brand-400);
+  --sidebar:var(--rail);
+  --sidebar-foreground:var(--rail-text);
+  --sidebar-primary:var(--rail-accent);
+  --sidebar-primary-foreground:#142d2a;
+  --sidebar-accent:var(--rail-active);
+  --sidebar-accent-foreground:#ffffff;
+  --sidebar-border:var(--rail-line);
+  --sidebar-ring:#56b5a5;
+  --chart-1:var(--brand-500);
+  --chart-2:var(--warn-500);
+  --chart-3:var(--info-500);
+  --chart-4:var(--danger-500);
+  --chart-5:var(--ink-400);
+
+  color-scheme:light;
+}
+
+/* ==========================================================================
+   Dark theme — the product had none. Surfaces invert, the brand stays legible
+   by moving up the ramp, and the navigation rail keeps its identity.
+   ========================================================================== */
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#071119;
+    --surface:#0f1f2b;
+    --surface-2:#173040;
+    --surface-3:#1f3c4d;
+    --surface-inset:#0d1c27;
+    --line:#2c4557;
+    --line-strong:#3a5a6f;
+    --text:#eef5f9;
+    --text-2:#c3d3de;
+    --text-3:#9db0bd;
+    --brand:var(--brand-300);
+    --brand-soft:#0f302c;
+    --brand-ink:var(--brand-200);
+    --text-on-brand:#04201c;
+
+    --rail:#0a1a24;
+    --rail-2:#112634;
+    --rail-line:#1e3644;
+    --rail-text:#d3e2ea;
+    --rail-text-2:#87a0b0;
+    --rail-active:#193243;
+    --rail-accent:#8fd8c2;
+
+    --warn-50:#2e2413;
+    --warn-100:#3d3018;
+    --warn-500:#d8a83f;
+    --danger-50:#2f1918;
+    --danger-100:#3f2120;
+    --danger-500:#e07a74;
+    --info-50:#16242f;
+    --info-100:#1d3141;
+    --info-500:#79aad0;
+    --good-50:#122a22;
+    --good-100:#17372c;
+    --good-500:#4fbc90;
+  --warn-700:#e7c079;
+  --danger-700:#f0a89f;
+  --info-700:#a9ccea;
+  --good-700:#79d8ac;
+  --brand-700:var(--brand-200);
+    --warn-700:#e7c079;
+    --danger-700:#f0a89f;
+    --info-700:#a9ccea;
+    --good-700:#79d8ac;
+    --brand-700:var(--brand-200);
+
+    --elev-1:0 1px 2px rgba(0,0,0,.4);
+    --elev-2:0 1px 2px rgba(0,0,0,.4), 0 6px 16px rgba(0,0,0,.36);
+    --elev-3:0 2px 4px rgba(0,0,0,.42), 0 14px 32px rgba(0,0,0,.45);
+    --elev-4:0 4px 8px rgba(0,0,0,.45), 0 28px 60px rgba(0,0,0,.55);
+
+    --sidebar-primary-foreground:#04201c;
+    --sidebar-accent-foreground:#eef6f2;
+    --sidebar-ring:#6fd0ba;
+
+    color-scheme:dark;
+  }
+}
+
+/* explicit choice wins over the OS in both directions */
+:root[data-theme="dark"]{
+  --bg:#071119;
+  --surface:#0f1f2b;
+  --surface-2:#173040;
+  --surface-3:#1f3c4d;
+  --surface-inset:#0d1c27;
+  --line:#2c4557;
+  --line-strong:#3a5a6f;
+  --text:#eef5f9;
+  --text-2:#c3d3de;
+  --text-3:#9db0bd;
+  --brand:var(--brand-300);
+  --brand-soft:#0f302c;
+  --brand-ink:var(--brand-200);
+  --text-on-brand:#04201c;
+
+  --rail:#0a1a24;
+  --rail-2:#112634;
+  --rail-line:#1e3644;
+  --rail-text:#d3e2ea;
+  --rail-text-2:#87a0b0;
+  --rail-active:#193243;
+  --rail-accent:#8fd8c2;
+
+  --warn-50:#2e2413;
+  --warn-100:#3d3018;
+  --warn-500:#d8a83f;
+  --danger-50:#2f1918;
+  --danger-100:#3f2120;
+  --danger-500:#e07a74;
+  --info-50:#16242f;
+  --info-100:#1d3141;
+  --info-500:#79aad0;
+  --good-50:#122a22;
+  --good-100:#17372c;
+  --good-500:#4fbc90;
+
+  --elev-1:0 1px 2px rgba(0,0,0,.4);
+  --elev-2:0 1px 2px rgba(0,0,0,.4), 0 6px 16px rgba(0,0,0,.36);
+  --elev-3:0 2px 4px rgba(0,0,0,.42), 0 14px 32px rgba(0,0,0,.45);
+  --elev-4:0 4px 8px rgba(0,0,0,.45), 0 28px 60px rgba(0,0,0,.55);
+
+  --sidebar-primary-foreground:#04201c;
+  --sidebar-accent-foreground:#eef6f2;
+  --sidebar-ring:#6fd0ba;
+
+  color-scheme:dark;
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+html{-webkit-text-size-adjust:100%}
+
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--font-ar);
+  font-size:var(--text-base);
+  line-height:var(--leading-normal);
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+
+/* Arabic reads better with slightly looser headings; Latin data stays tight */
+h1,h2,h3,h4{line-height:var(--leading-tight);text-wrap:balance;font-weight:var(--weight-semibold)}
+
+/* every figure that lines up in a column gets tabular digits */
+[data-numeric],.num,table td,table th{font-variant-numeric:tabular-nums}
+
+/* Latin fragments inside Arabic keep their own direction */
+[dir="ltr"]{unicode-bidi:isolate}
+
+:where(a,button,[role="button"],input,select,textarea,summary):focus-visible{
+  outline:none;
+  box-shadow:var(--ring-focus);
+  border-radius:var(--r-xs);
+}
+
+::selection{background:color-mix(in srgb,var(--brand) 26%,transparent)}
+
+/* scrollbars that match the surface instead of the OS default */
+*{scrollbar-color:var(--line-strong) transparent}
+*::-webkit-scrollbar{width:10px;height:10px}
+*::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:var(--r-pill);border:3px solid transparent;background-clip:content-box}
+*::-webkit-scrollbar-thumb:hover{background:var(--text-3);background-clip:content-box}
+*::-webkit-scrollbar-track{background:transparent}

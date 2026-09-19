@@ -1,0 +1,141 @@
+/* ==========================================================================
+   Screen: login — migrated onto the token system.
+   Replaces the legacy .login-* block (hard-coded colours, fixed px, no dark
+   mode, no motion). Two panels on a desk, one stacked column on a phone.
+   ========================================================================== */
+
+.login-page{
+  min-block-size:100svh;
+  display:grid;
+  grid-template-columns:1.05fr .95fr;
+  background:var(--bg);
+  color:var(--text);
+}
+
+/* ---- left: the story panel ---------------------------------------------- */
+.login-story{
+  position:relative;
+  display:flex;flex-direction:column;justify-content:space-between;gap:var(--space-8);
+  padding:clamp(28px,4vw,64px);
+  background:
+    radial-gradient(120% 90% at 85% 8%, color-mix(in srgb,var(--brand-400) 26%,transparent), transparent 62%),
+    linear-gradient(160deg,var(--rail) 0%,var(--rail-2) 100%);
+  color:var(--rail-text);
+  overflow:hidden;
+  isolation:isolate;
+}
+/* a quiet grid so the panel is not a flat slab */
+.login-story::before{
+  content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background-image:linear-gradient(var(--rail-line) 1px,transparent 1px),linear-gradient(90deg,var(--rail-line) 1px,transparent 1px);
+  background-size:64px 64px;
+  opacity:.35;
+  -webkit-mask-image:radial-gradient(90% 70% at 70% 20%,#000 20%,transparent 100%);
+  mask-image:radial-gradient(90% 70% at 70% 20%,#000 20%,transparent 100%);
+}
+.login-brand{
+  display:flex;align-items:center;gap:var(--space-3);
+  font-size:var(--text-xl);font-weight:var(--weight-semibold);letter-spacing:-.01em;
+  animation:sanad-rise var(--dur-4) var(--ease-out) both;
+}
+.brand-symbol{
+  display:grid;place-items:center;inline-size:52px;block-size:52px;flex:none;
+  border-radius:var(--r-md);
+  background:color-mix(in srgb,var(--rail-accent) 18%,transparent);
+  color:var(--rail-accent);
+  border:1px solid color-mix(in srgb,var(--rail-accent) 26%,transparent);
+}
+.login-story-copy{display:flex;flex-direction:column;gap:var(--space-4);max-inline-size:34ch}
+.login-eyebrow{
+  font-size:var(--text-xs);letter-spacing:var(--tracking-label);
+  color:var(--rail-accent);font-weight:var(--weight-semibold);
+  animation:sanad-rise var(--dur-4) var(--ease-out) 120ms both;
+}
+.login-story-copy h1{
+  margin:0;font-size:var(--text-3xl);line-height:var(--leading-tight);color:#fff;
+  animation:sanad-rise var(--dur-4) var(--ease-out) 200ms both;
+}
+.login-story-copy p{
+  margin:0;font-size:var(--text-md);line-height:var(--leading-normal);color:var(--rail-text-2);
+  animation:sanad-rise var(--dur-4) var(--ease-out) 300ms both;
+}
+.login-trust{
+  display:flex;align-items:center;gap:var(--space-3);
+  padding:var(--space-3) var(--space-4);
+  border-radius:var(--r-pill);
+  background:color-mix(in srgb,#fff 7%,transparent);
+  border:1px solid color-mix(in srgb,#fff 12%,transparent);
+  font-size:var(--text-sm);color:var(--rail-text);
+  inline-size:fit-content;
+  animation:sanad-rise var(--dur-4) var(--ease-out) 400ms both;
+}
+.login-trust svg{color:var(--rail-accent);flex:none}
+.login-version{
+  font-size:var(--text-xs);color:var(--rail-text-2);letter-spacing:.04em;
+  animation:sanad-fade var(--dur-5) var(--ease-out) 560ms both;
+}
+
+/* ---- right: the form ----------------------------------------------------- */
+.login-form-area{
+  display:grid;place-items:center;
+  padding:clamp(24px,4vw,56px);
+  background:var(--surface);
+}
+.login-form{
+  inline-size:min(420px,100%);
+  display:flex;flex-direction:column;gap:var(--space-4);
+  animation:sanad-rise var(--dur-4) var(--ease-out) 160ms both;
+}
+.login-lock{
+  display:grid;place-items:center;inline-size:54px;block-size:54px;
+  border-radius:var(--r-md);
+  background:var(--brand-soft);color:var(--brand-ink);
+  border:1px solid color-mix(in srgb,var(--brand) 20%,transparent);
+  margin-block-end:var(--space-2);
+}
+.login-form h2{margin:0;font-size:var(--text-xl)}
+.login-form > p{margin:0 0 var(--space-2);font-size:var(--text-sm);color:var(--text-3)}
+.login-form .field{display:flex;flex-direction:column;gap:var(--space-2)}
+.login-form label{font-size:var(--text-sm);color:var(--text-2);font-weight:var(--weight-medium)}
+.login-form input{
+  block-size:46px;font-size:var(--text-base);
+  border-radius:var(--r-sm);
+  transition:border-color var(--dur-2) var(--ease-out),box-shadow var(--dur-2) var(--ease-out);
+}
+.password-field{position:relative;display:flex;align-items:center}
+.password-field input{padding-inline-end:46px;inline-size:100%}
+.password-field button{position:absolute;inset-inline-end:4px;color:var(--text-3)}
+.password-field button:hover{color:var(--text-2)}
+.login-submit{
+  block-size:48px;font-size:var(--text-base);font-weight:var(--weight-semibold);
+  border-radius:var(--r-sm);
+  display:inline-flex;align-items:center;justify-content:center;gap:var(--space-2);
+  transition:transform var(--dur-1) var(--ease-out),box-shadow var(--dur-2) var(--ease-out),background-color var(--dur-2) var(--ease-out);
+}
+.login-submit:hover:not(:disabled){box-shadow:var(--elev-2)}
+.login-submit:active:not(:disabled){transform:translateY(1px)}
+.login-submit svg{transition:transform var(--dur-2) var(--ease-out)}
+.login-submit:hover:not(:disabled) svg{transform:translateX(-3px)}   /* RTL: arrow points the way it goes */
+.login-form small{font-size:var(--text-xs);color:var(--text-3);line-height:var(--leading-normal)}
+.form-error{
+  margin:0;padding:var(--space-3) var(--space-4);
+  border-radius:var(--r-sm);
+  background:var(--danger-50);color:var(--danger-700);
+  border:1px solid color-mix(in srgb,var(--danger-500) 26%,transparent);
+  font-size:var(--text-sm);
+  animation:sanad-pop var(--dur-2) var(--ease-spring) both;
+}
+.login-theme{position:absolute;inset-block-start:var(--space-4);inset-inline-end:var(--space-4);z-index:2}
+
+/* ---- responsive ---------------------------------------------------------- */
+@media (max-width:900px){
+  .login-page{grid-template-columns:1fr}
+  .login-story{gap:var(--space-6);padding-block:var(--space-8)}
+  .login-story-copy h1{font-size:var(--text-2xl)}
+  .login-version{display:none}
+}
+@media (max-width:520px){
+  .login-story{padding:var(--space-6) var(--space-5)}
+  .login-form-area{padding:var(--space-7) var(--space-5)}
+  .brand-symbol{inline-size:44px;block-size:44px}
+}

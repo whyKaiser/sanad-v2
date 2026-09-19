@@ -1,0 +1,163 @@
+/* ==========================================================================
+   Motion and interaction for the migrated screens.
+
+   Applied to the class names the eleven views already use, so every screen
+   gains entrances, hover feedback and focus states without its markup being
+   rewritten. Keyframes and tokens come from motion.css / design-tokens.css,
+   and the global reduced-motion guard in motion.css switches all of it off.
+   ========================================================================== */
+
+/* ---- entrances ----------------------------------------------------------
+   A view switch already replays .view-enter (see components/ui/motion.tsx).
+   Its cards arrive just behind it, in reading order. */
+.view-enter .stats-grid > *,
+.view-enter .documents-grid > *,
+.view-enter .guide-grid > *,
+.view-enter .ops-metrics > *,
+.view-enter .analytics-columns > *,
+.view-enter .record-grid > *,
+.view-enter .traveler-grid > *{
+  animation:sanad-rise var(--dur-3) var(--ease-out) both;
+}
+.view-enter .stats-grid > *:nth-child(2),
+.view-enter .documents-grid > *:nth-child(2),
+.view-enter .guide-grid > *:nth-child(2),
+.view-enter .ops-metrics > *:nth-child(2){animation-delay:calc(var(--stagger) * 1)}
+.view-enter .stats-grid > *:nth-child(3),
+.view-enter .documents-grid > *:nth-child(3),
+.view-enter .guide-grid > *:nth-child(3),
+.view-enter .ops-metrics > *:nth-child(3){animation-delay:calc(var(--stagger) * 2)}
+.view-enter .stats-grid > *:nth-child(4),
+.view-enter .documents-grid > *:nth-child(4),
+.view-enter .guide-grid > *:nth-child(4),
+.view-enter .ops-metrics > *:nth-child(4){animation-delay:calc(var(--stagger) * 3)}
+.view-enter .stats-grid > *:nth-child(n+5),
+.view-enter .documents-grid > *:nth-child(n+5),
+.view-enter .guide-grid > *:nth-child(n+5){animation-delay:calc(var(--stagger) * 4)}
+
+/* list rows come in as one block: staggering long lists reads as lag */
+.view-enter .case-row,
+.view-enter .audit-row,
+.view-enter .movement-list,
+.view-enter .intake-list,
+.view-enter .packet-items,
+.view-enter .evidence-list{animation:sanad-fade var(--dur-3) var(--ease-out) both}
+
+/* panels that own a whole view */
+.view-enter .assistant-panel,
+.view-enter .audit-panel,
+.view-enter .traveler-panel,
+.view-enter .case-panel,
+.view-enter .error-panel{animation:sanad-rise var(--dur-3) var(--ease-out) both}
+
+/* ---- hover and press -----------------------------------------------------
+   Card-like surfaces lift; rows only tint, so a long table never jitters. */
+.stat-card,
+.library-card,
+.ops-card,
+.directive-card,
+.guide-box,
+.movement-card,
+.history-item{
+  transition:transform var(--dur-2) var(--ease-out),
+             box-shadow var(--dur-2) var(--ease-out),
+             border-color var(--dur-2) var(--ease-out);
+}
+.stat-card:hover,
+.library-card:hover,
+.ops-card:hover,
+.directive-card:hover,
+.movement-card:hover,
+.history-item:hover{
+  transform:translateY(-2px);
+  box-shadow:var(--elev-3);
+  border-color:var(--line-strong);
+}
+button.stat-card:active,
+button.library-card:active,
+.case-row:active{transform:translateY(1px) scale(.997)}
+
+.case-row,
+.audit-row,
+.visa-count-row,
+.comparison-row{transition:background-color var(--dur-2) var(--ease-out)}
+.case-row:hover,
+.audit-row:hover,
+.visa-count-row:hover{background:var(--surface-2)}
+
+/* the navigation rail responds on the leading edge, the way RTL reads */
+.nav-item{transition:background-color var(--dur-2) var(--ease-out),color var(--dur-2) var(--ease-out),padding-inline-start var(--dur-2) var(--ease-out)}
+.nav-item:hover{padding-inline-start:calc(var(--space-4) + 3px)}
+
+/* buttons and chips acknowledge the click */
+.icon-button,
+.primary-action,
+.review-pill,
+.latest-pill,
+.demo-chip{transition:transform var(--dur-1) var(--ease-out),background-color var(--dur-2) var(--ease-out),border-color var(--dur-2) var(--ease-out),box-shadow var(--dur-2) var(--ease-out)}
+.icon-button:hover{background:var(--surface-2);color:var(--text)}
+.icon-button:active,
+.primary-action:active{transform:translateY(1px)}
+.primary-action:hover{box-shadow:var(--elev-2)}
+
+/* ---- focus --------------------------------------------------------------- */
+.case-row:focus-visible,
+.nav-item:focus-visible,
+.icon-button:focus-visible,
+.stat-card:focus-visible,
+.library-card:focus-visible{outline:none;box-shadow:var(--ring-focus)}
+
+/* ---- loading ------------------------------------------------------------- */
+.loading-state{display:grid;place-items:center;gap:var(--space-3);padding:var(--space-10) var(--space-5);color:var(--text-3)}
+.loading-state svg{color:var(--brand)}
+
+/* ==========================================================================
+   Responsive: the screens were built for a desk. These rules keep every view
+   usable down to 360px without touching their markup.
+   ========================================================================== */
+
+/* wide tables scroll in their own box, never the page */
+.table-scroll{overflow-x:auto;overscroll-behavior-x:contain}
+.table-scroll table{min-inline-size:max-content}
+
+@media (max-width:900px){
+  .analytics-columns,
+  .guide-columns,
+  .traveler-grid,
+  .record-grid,
+  .form-grid{grid-template-columns:1fr !important}
+  .ops-metrics{grid-template-columns:repeat(2,minmax(0,1fr)) !important}
+}
+
+@media (max-width:640px){
+  .workspace-body{padding-inline:var(--space-4) !important}
+  .stats-grid{grid-template-columns:repeat(2,minmax(0,1fr)) !important}
+  .topbar{gap:var(--space-2)}
+  .topbar-title span{display:none}         /* keep the breadcrumb's last crumb only */
+  .page-heading{flex-direction:column;align-items:stretch;gap:var(--space-3)}
+  .primary-action{inline-size:100%}
+  .case-panel,
+  .assistant-panel,
+  .traveler-panel,
+  .audit-panel{padding:var(--space-4) !important}
+}
+
+@media (max-width:420px){
+  .stats-grid,
+  .ops-metrics{grid-template-columns:1fr !important}
+  .review-pill,
+  .latest-pill,
+  .demo-chip{font-size:var(--text-2xs)}
+}
+
+/* dialogs stay inside the viewport on a phone */
+@media (max-width:520px){
+  .case-dialog,
+  .traveler-dialog,
+  .upload-dialog,
+  .packet-dialog{
+    inline-size:calc(100vw - var(--space-6)) !important;
+    max-block-size:calc(100svh - var(--space-8));
+    overflow-y:auto;
+  }
+}
