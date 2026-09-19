@@ -2,7 +2,7 @@
 
 **سَنَد** نموذج أولي عربي لإدارة ملف الحالة والوثائق المرتبطة به، مع مراجعة أوضح، سجل تغييرات قابل للتحقق، ومؤشرات تساعد على ترتيب العمل. صُمم لمسار أمن المنافذ، ويعرض بيانات تجريبية اصطناعية فقط.
 
-🔗 **[جرّب سَنَد ٢ مباشرة](https://sanad-v2.songokualshareef.workers.dev)** · [دليل الواجهات](docs/SANAD-v2-complete-interface-guide.pdf)
+🔗 **[جرّب سَنَد ٢ مباشرة](https://sanad-v2.songokualshareef.workers.dev)** · [دليل الواجهات](docs/SANAD-v2-complete-interface-guide.pdf) · [الشرح المتحرك](https://github.com/whyKaiser/sanad-motion)
 
 ### حساب تجربة للقراءة
 
