@@ -11,7 +11,7 @@
  */
 import fs from "node:fs";
 
-const TARGET = "app/legacy.css";
+const TARGET = process.argv.find(a => a.startsWith("--file="))?.slice(7) ?? "app/legacy.css";
 
 /* token -> the size it settles on at desktop width */
 const TYPE = [

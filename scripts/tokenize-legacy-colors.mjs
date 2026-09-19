@@ -14,7 +14,7 @@
 import fs from "node:fs";
 
 const TOKENS_FILE = "app/design-tokens.css";
-const TARGET_FILE = "app/legacy.css";
+const TARGET_FILE = process.argv.find(a => a.startsWith("--file="))?.slice(7) ?? "app/legacy.css";
 
 /* Tokens a screen is allowed to reference. Ramp steps are resolved to their
    literal value; semantic aliases are what we actually write into the CSS. */
