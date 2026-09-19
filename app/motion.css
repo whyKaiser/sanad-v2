@@ -1,0 +1,131 @@
+/* ==========================================================================
+   سَنَد ٢ — Motion
+   The product shipped with one keyframe and two transitions. This layer gives
+   every surface a consistent entrance, every control a response, and every
+   loading state something honest to show.
+
+   Rules it follows:
+   • motion carries meaning (where a thing came from, what changed), never decoration
+   • distances stay small (8–18px) and durations short (120–520ms)
+   • direction is logical, so RTL flips automatically
+   • everything collapses to a plain fade under prefers-reduced-motion
+   ========================================================================== */
+
+/* ---- entrances ---------------------------------------------------------- */
+@keyframes sanad-rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@keyframes sanad-fade{from{opacity:0}to{opacity:1}}
+@keyframes sanad-pop{from{opacity:0;transform:scale(.965)}to{opacity:1;transform:none}}
+@keyframes sanad-slide-inline{from{opacity:0;transform:translateX(var(--slide-from,14px))}to{opacity:1;transform:none}}
+@keyframes sanad-wipe{from{clip-path:inset(0 0 0 100%)}to{clip-path:inset(0 0 0 0)}}
+@keyframes sanad-draw{from{stroke-dashoffset:var(--draw-length,320)}to{stroke-dashoffset:0}}
+
+/* ---- ambient ------------------------------------------------------------ */
+@keyframes sanad-spin{to{transform:rotate(360deg)}}
+@keyframes sanad-pulse{0%,100%{opacity:1}50%{opacity:.55}}
+@keyframes sanad-shimmer{from{background-position:-160% 0}to{background-position:260% 0}}
+@keyframes sanad-ping{0%{transform:scale(.9);opacity:.75}70%,100%{transform:scale(1.9);opacity:0}}
+
+/* ==========================================================================
+   Utilities
+   ========================================================================== */
+.motion-rise,
+.motion-fade,
+.motion-pop,
+.motion-slide{
+  animation-duration:var(--motion-duration,var(--dur-3));
+  animation-delay:var(--motion-delay,0ms);
+  animation-timing-function:var(--ease-out);
+  animation-fill-mode:both;
+}
+.motion-rise{animation-name:sanad-rise}
+.motion-fade{animation-name:sanad-fade}
+.motion-pop{animation-name:sanad-pop;animation-timing-function:var(--ease-spring)}
+.motion-slide{animation-name:sanad-slide-inline}
+
+/* a list or grid whose children arrive one after another:
+   <div class="motion-stagger"> … each child animates in order … </div> */
+.motion-stagger > *{
+  animation:sanad-rise var(--dur-3) var(--ease-out) both;
+  animation-delay:calc(var(--motion-delay,0ms) + var(--stagger) * var(--motion-index,0));
+}
+.motion-stagger > *:nth-child(1){--motion-index:0}
+.motion-stagger > *:nth-child(2){--motion-index:1}
+.motion-stagger > *:nth-child(3){--motion-index:2}
+.motion-stagger > *:nth-child(4){--motion-index:3}
+.motion-stagger > *:nth-child(5){--motion-index:4}
+.motion-stagger > *:nth-child(6){--motion-index:5}
+.motion-stagger > *:nth-child(7){--motion-index:6}
+.motion-stagger > *:nth-child(8){--motion-index:7}
+.motion-stagger > *:nth-child(n+9){--motion-index:8}
+
+/* revealed by the <Reveal> component once the element reaches the viewport */
+.reveal{opacity:0;transform:translateY(14px);transition:opacity var(--dur-4) var(--ease-out),transform var(--dur-4) var(--ease-out);transition-delay:var(--motion-delay,0ms)}
+.reveal[data-shown="true"]{opacity:1;transform:none}
+
+/* view switches inside the workspace: the panel arrives from the leading edge */
+.view-enter{animation:sanad-rise var(--dur-3) var(--ease-out) both}
+.view-enter-inline{--slide-from:18px;animation:sanad-slide-inline var(--dur-3) var(--ease-out) both}
+
+/* ==========================================================================
+   Micro-interactions
+   ========================================================================== */
+.press{transition:transform var(--dur-1) var(--ease-out),box-shadow var(--dur-2) var(--ease-out),background-color var(--dur-2) var(--ease-out),border-color var(--dur-2) var(--ease-out)}
+.press:active{transform:translateY(1px) scale(.994)}
+
+.lift{transition:transform var(--dur-2) var(--ease-out),box-shadow var(--dur-2) var(--ease-out),border-color var(--dur-2) var(--ease-out)}
+.lift:hover{transform:translateY(-2px);box-shadow:var(--elev-3)}
+
+/* a row that responds without moving the layout */
+.row-hover{transition:background-color var(--dur-2) var(--ease-out)}
+.row-hover:hover{background:var(--surface-2)}
+
+/* underline that grows from the leading edge — direction-aware by default */
+.link-underline{position:relative}
+.link-underline::after{
+  content:"";position:absolute;inset-inline-start:0;bottom:-2px;height:1.5px;width:0;
+  background:currentColor;transition:width var(--dur-2) var(--ease-out);
+}
+.link-underline:hover::after{width:100%}
+
+/* state dot that pings once when something lands */
+.ping{position:relative}
+.ping::after{
+  content:"";position:absolute;inset:0;border-radius:inherit;
+  border:1px solid currentColor;animation:sanad-ping var(--dur-5) var(--ease-out) 1 both;
+}
+
+.spin{animation:sanad-spin 900ms linear infinite}
+.pulse{animation:sanad-pulse 1.6s var(--ease-in-out) infinite}
+
+/* ==========================================================================
+   Loading — a shape that matches what is coming, not a spinner over a void
+   ========================================================================== */
+.skeleton{
+  background:linear-gradient(90deg,var(--surface-2) 0%,var(--surface-3) 45%,var(--surface-2) 90%);
+  background-size:220% 100%;
+  animation:sanad-shimmer 1.5s linear infinite;
+  border-radius:var(--r-sm);
+  color:transparent;
+  user-select:none;
+}
+.skeleton-line{height:1em;margin-block:.35em}
+.skeleton-line.short{width:42%}
+.skeleton-line.medium{width:68%}
+
+/* ==========================================================================
+   Reduced motion — keep the information, drop the travel
+   ========================================================================== */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{
+    animation-duration:.01ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.01ms !important;
+    scroll-behavior:auto !important;
+  }
+  .motion-rise,.motion-pop,.motion-slide,.motion-stagger > *,.view-enter,.view-enter-inline{
+    animation:sanad-fade .01ms both !important;
+  }
+  .reveal{opacity:1;transform:none}
+  .skeleton{animation:none;background:var(--surface-2)}
+  .spin{animation:sanad-spin 900ms linear infinite !important} /* progress still needs to read as progress */
+}
