@@ -94,7 +94,7 @@ for (const [name, value] of literals) {
 }
 
 /* ---- rewrite -------------------------------------------------------------- */
-const css = fs.readFileSync(TARGET_FILE, "utf8");
+let css = fs.readFileSync(TARGET_FILE, "utf8");
 const report = new Map();
 let replaced = 0;
 let skipped = 0;
@@ -131,6 +131,12 @@ function groupFor(property) {
   if (/^(color|stroke|-webkit-text-fill-color|caret-color)/.test(property)) return "text";
   return "";               /* box-shadow, gradients, anything ambiguous */
 }
+
+/* CSS keyword colours never matched the hex pass, which is how a white
+   input background survived into dark mode. Surfaces move onto tokens;
+   keyword text colours stay literal, like white text on a coloured fill. */
+css = css.replace(/(background(?:-color)?\s*:\s*)white/g, "$1var(--surface)");
+css = css.replace(/(background(?:-color)?\s*:\s*)black/g, "$1var(--text)");
 
 const out = css.replace(/#[0-9a-fA-F]{3,8}\b/g, (hex, index) => {
   /* colours carrying alpha (#rgba / #rrggbbaa) stay literal: dropping the alpha
